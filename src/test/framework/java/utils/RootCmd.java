@@ -49,14 +49,14 @@ public final class RootCmd {
 			dos = new DataOutputStream(p.getOutputStream());
 			dis = new DataInputStream(p.getInputStream());
 
-			Log.i(TAG, cmd);
+			Log.i(TAG, "execRootCmd: " + cmd);
 			dos.writeBytes(cmd + "\n");
 			dos.flush();
 			dos.writeBytes("exit\n");
 			dos.flush();
 			String line = null;
 			while ((line = dis.readLine()) != null) {
-				Log.d("result", line);
+				Log.d(TAG, "execRootCmd: " + line);
 				result.add(line);
 			}
 
@@ -93,7 +93,7 @@ public final class RootCmd {
 			Process p = Runtime.getRuntime().exec("su");
 			dos = new DataOutputStream(p.getOutputStream());
 
-			Log.i(TAG, cmd);
+			Log.i(TAG, "execRootCmdSilent: " + cmd);
 			dos.writeBytes(cmd + "\n");
 			dos.flush();
 			dos.writeBytes("exit\n");
@@ -129,14 +129,14 @@ public final class RootCmd {
 			dos = new DataOutputStream(p.getOutputStream());
 			dis = new DataInputStream(p.getInputStream());
 
-			Log.i(TAG, cmd);
+			Log.i(TAG, "execCmd: " + cmd);
 			dos.writeBytes(cmd + "\n");
 			dos.flush();
 			dos.writeBytes("exit\n");
 			dos.flush();
 			String line = null;
 			while ((line = dis.readLine()) != null) {
-				Log.d("result", line);
+				Log.d(TAG, "execCmd: " + line);
 				result.add(line);
 			}
 
