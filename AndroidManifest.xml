@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.baidu.tcpdump"
+    android:versionCode="1"
+    android:versionName="0.0.1" >
+
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="16" />
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <instrumentation
+        android:name="android.test.InstrumentationTestRunner"
+        android:targetPackage="com.baidu.tcpdump" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name="com.baidu.tcpdump.MainActivity"
+            android:label="@string/app_name"
+            android:launchMode="singleInstance" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name="com.baidu.tcpdump.BootReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        
+        <receiver android:name="com.baidu.tcpdump.ShutdownReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+            </intent-filter>
+        </receiver>
+        
+        <receiver
+            android:name="com.baidu.tcpdump.AlarmReceiver"
+            android:process=":remote" >
+            
+            <intent-filter>
+                <action android:name="com.baidu.tcpdump.Action.rootalarm"/>
+            </intent-filter>
+            
+        </receiver>
+
+        <service
+            android:name=".RootService"
+            android:exported="true"
+            android:process=":dorootservice">
+            
+            <intent-filter>
+                <action android:name="com.baidu.tcpdump.Action.rootservice"/>
+            </intent-filter>
+        </service>
+
+        <!-- dump tcp service -->
+        <service android:name="TcpdumpService" />
+        <!-- android:process=":tcpdump" -->
+    </application>
+
+</manifest>
