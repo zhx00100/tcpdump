@@ -486,8 +486,11 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				final String powerPath = resultPath + "power.txt";
-				RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> " + powerPath);
+				
+				RootCmd.execRootCmd("logcat -c");
 				RootCmd.execRootCmd("date >> " + powerPath);
+				RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> " + powerPath);
+				
 			}
 		}, 2000);
 		
