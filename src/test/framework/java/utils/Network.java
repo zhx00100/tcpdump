@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -64,58 +65,91 @@ public class Network {
 
 	}
 
-	public static void getNetworkType(int checkNetworkType) {
+	public static String getNetworkType(int checkNetworkType) {
+		final String networkType;
+		
 		switch (checkNetworkType) {
 		case TYPE_WIFI:
 			Log.i(TAG, "================wifi");
+			networkType = "wifi";
 			break;
 		case TYPE_NET_WORK_DISABLED:
 			Log.i(TAG, "================no network");
+			networkType = "no network";
 			break;
 		case TYPE_CT_WAP:
 			Log.i(TAG, "================ctwap");
+			networkType = "ctwap";
 			break;
 		case TYPE_CT_WAP_2G:
 			Log.i(TAG, "================ctwap_2g");
+			networkType = "ctwap_2g";
 			break;
 		case TYPE_CT_NET:
 			Log.i(TAG, "================ctnet");
+			networkType = "ctnet";
 			break;
 		case TYPE_CT_NET_2G:
 			Log.i(TAG, "================ctnet_2g");
+			networkType = "ctnet_2g";
 			break;
 		case TYPE_CM_WAP:
 			Log.i(TAG, "================cmwap");
+			networkType = "cmwap";
 			break;
 		case TYPE_CM_WAP_2G:
 			Log.i(TAG, "================cmwap_2g");
+			networkType = "cmwap_2g";
 			break;
 		case TYPE_CM_NET:
 			Log.i(TAG, "================cmnet");
+			networkType = "cmnet";
 			break;
 		case TYPE_CM_NET_2G:
 			Log.i(TAG, "================cmnet_2g");
+			networkType = "cmnet_2g";
 			break;
 		case TYPE_CU_NET:
 			Log.i(TAG, "================cunet");
+			networkType = "cunet";
 			break;
 		case TYPE_CU_NET_2G:
 			Log.i(TAG, "================cunet_2g");
+			networkType = "cunet_2g";
 			break;
 		case TYPE_CU_WAP:
 			Log.i(TAG, "================cuwap");
+			networkType = "cuwap";
 			break;
 		case TYPE_CU_WAP_2G:
 			Log.i(TAG, "================cuwap_2g");
+			networkType = "Wifi";
 			break;
 		case TYPE_OTHER:
 			Log.i(TAG, "================other");
+			networkType = "other";
 			break;
 		default:
+			networkType = "未识别的APN";
 			break;
 		}
+		
+		return networkType;
 	}
 
+	public static boolean isConnected(Context context) {
+		final ConnectivityManager connectivityManager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		final NetworkInfo mobNetInfoActivity = connectivityManager
+				.getActiveNetworkInfo();
+
+		if (mobNetInfoActivity == null || !mobNetInfoActivity.isAvailable()) {
+			return false;
+		}
+		
+		return true;
+	}
+	
 	public static int isWifiOrMobile(Context context) {
 		final ConnectivityManager connectivityManager = (ConnectivityManager) context
 				.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -274,6 +308,72 @@ public class Network {
 			return false;
 
 		}
+	}
+	
+	/**
+	 * 打开/关闭 wifi
+	 */
+	public static void enableWifi(boolean enable) {
+		if (enable) {
+			openWifi();
+		} else {
+			closeWifi();
+		}
+	}
+	
+	/**
+	 * 打开/关闭 移动数据
+	 */
+	public static void enableData(boolean enable) {
+		if (enable) {
+			openData();
+		} else {
+			closeData();
+		}
+	}
+	
+	/**
+	 * 打开/关闭 网络连接
+	 */
+	public static void enableNetwork(boolean enable) {
+		if (enable) {
+			enableWifi(true);
+			enableData(true);
+		} else {
+			enableWifi(false);
+			enableData(false);
+		}
+	}
+	
+	/**
+	 * 设置wifi优于移动数据
+	 */
+	public static void setWifiPrefer() {
+//		Settings.Secure.putInt(cr, name, value)
+		RootCmd.execRootCmd("svc wifi prefer");	
+	}
+	
+	/**
+	 * 设置移动数据优于wifi
+	 */
+	public static void setDataPrefer() {
+		RootCmd.execRootCmd("svc data prefer");	
+	}
+	
+	private static void openWifi() {
+		RootCmd.execRootCmd("svc wifi enable");
+	}
+	
+	private static void closeWifi() {
+		RootCmd.execRootCmd("svc wifi disable");
+	}
+	
+	private static void openData() {
+		RootCmd.execRootCmd("svc data enable");
+	}
+	
+	private static void closeData() {
+		RootCmd.execRootCmd("svc data disable");
 	}
 
 }
