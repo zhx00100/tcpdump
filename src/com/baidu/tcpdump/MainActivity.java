@@ -474,6 +474,9 @@ public class MainActivity extends Activity {
 		RootCmd.execRootCmd("am startservice -a com.baidu.action.statistics.POWER");
 		sleep(2);
 		
+		// clear logcat
+		RootCmd.execRootCmd("logcat -c");
+		
 		for (String p : pkgs) {
 			RootCmd.execRootCmd("am startservice -a com.baidu.action.statistics.POWER -e package "
 					+ p);
@@ -489,7 +492,6 @@ public class MainActivity extends Activity {
 			public void run() {
 				final String powerPath = resultPath + "power.txt";
 				
-				RootCmd.execRootCmd("logcat -c");
 				RootCmd.execRootCmd("date >> " + powerPath);
 				RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> " + powerPath);
 				
