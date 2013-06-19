@@ -9,6 +9,7 @@ import java.util.Date;
 
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
+import test.framework.java.utils.Network;
 import test.framework.java.utils.PushUtility;
 import test.framework.java.utils.RootCmd;
 import android.annotation.SuppressLint;
@@ -47,13 +48,16 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		wl.acquire();
+//		Network.getNetworkType(Network.checkNetworkType(getApplicationContext()));
+//		Network.
 	}
 
 	@Override
 	protected void onDestroy() {
-		wl.release();
-		wl = null;
+		if (wl != null) {
+			wl.release();
+			wl = null;
+		}
 		super.onDestroy();
 	}
 
@@ -80,6 +84,7 @@ public class MainActivity extends Activity {
 			wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK
 					| PowerManager.ACQUIRE_CAUSES_WAKEUP
 					| PowerManager.ON_AFTER_RELEASE, "tcpdump");
+			wl.acquire();
 		}
 	}
 
@@ -186,6 +191,15 @@ public class MainActivity extends Activity {
 				return;
 			}
 
+			//检查网络是否可用
+			if (Network.isConnected(getApplicationContext())) {
+				log("网络已连接!");
+				log("网络制式：" + Network.getNetworkType(Network.checkNetworkType(getApplicationContext())));
+			} else {
+				log("网络未连接, 请联网后测试!");
+				return;
+			}
+			
 			AssetManager assetMgr = getAssets();
 
 			// ArrayList<String> b = RootCmd.execRootCmd("busybox");
