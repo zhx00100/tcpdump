@@ -1,8 +1,17 @@
 package test.framework.java.utils;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.util.ArrayList;
 
 import android.util.Log;
@@ -40,22 +49,39 @@ public final class RootCmd {
 		
 		String error = "no su";
 		
-		DataOutputStream dos = null;
-		DataInputStream dis = null;
+//		DataOutputStream dos = null;
+//		DataInputStream dis = null;
 
+		Writer osw = null;
+		BufferedWriter output = null;
+		
+		Reader isr = null;
+		BufferedReader input = null;
+		
 		try {
 			Process p = Runtime.getRuntime().exec("su");// 经过Root处理的android系统
 														// 有su命令
-			dos = new DataOutputStream(p.getOutputStream());
-			dis = new DataInputStream(p.getInputStream());
+			InputStream is = p.getInputStream();
+			OutputStream os = p.getOutputStream();
+			
+			osw = new OutputStreamWriter(os);
+			output = new BufferedWriter(osw);
+			
+//			dos = new DataOutputStream(os);
+//			dis = new DataInputStream(is);
 
 			Log.i(TAG, "execRootCmd: " + cmd);
-			dos.writeBytes(cmd + "\n");
-			dos.flush();
-			dos.writeBytes("exit\n");
-			dos.flush();
+			output.write(cmd + "\n");
+			output.flush();
+			output.write("exit\n");
+			output.flush();
+			
 			String line = null;
-			while ((line = dis.readLine()) != null) {
+			
+			isr = new InputStreamReader(is);
+			input = new LineNumberReader(isr);
+			
+			while ((line = input.readLine()) != null) {
 				Log.d(TAG, "execRootCmd: " + line);
 				result.add(line);
 			}
@@ -65,18 +91,19 @@ public final class RootCmd {
 			e.printStackTrace();
 			result.add(error);
 		} finally {
-			if (dos != null) {
+			if (output != null) {
 				try {
-					dos.close();
+					output.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					Log.e(TAG, Log.getStackTraceString(e));
 				}
 			}
-			if (dis != null) {
+			
+			if (input != null) {
 				try {
-					dis.close();
+					input.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					Log.e(TAG, Log.getStackTraceString(e));
 				}
 			}
 		}
@@ -84,7 +111,11 @@ public final class RootCmd {
 		return result;
 	}
 
-	// 执行命令但不关注结果输出
+	/**
+	 * 执行命令但不关注结果输出
+	 * @param cmd
+	 * @return
+	 */
 	public static int execRootCmdSilent(String cmd) {
 		int result = -1;
 		DataOutputStream dos = null;
@@ -114,26 +145,31 @@ public final class RootCmd {
 		return result;
 	}
 	
+	/**
+	 * 在用戶权限下执行shell命令
+	 * @param cmd
+	 * @return
+	 */
 	public static ArrayList<String> execCmd(String cmd) {
 		
 		ArrayList<String> result = new ArrayList<String>();
 		
 		String error = "no su";
 		
-		DataOutputStream dos = null;
+//		DataOutputStream dos = null;
 		DataInputStream dis = null;
 
 		try {
-			Process p = Runtime.getRuntime().exec("");// 经过Root处理的android系统
+			Process p = Runtime.getRuntime().exec(cmd);// 经过Root处理的android系统
 														// 有su命令
-			dos = new DataOutputStream(p.getOutputStream());
+//			dos = new DataOutputStream(p.getOutputStream());
 			dis = new DataInputStream(p.getInputStream());
 
 			Log.i(TAG, "execCmd: " + cmd);
-			dos.writeBytes(cmd + "\n");
-			dos.flush();
-			dos.writeBytes("exit\n");
-			dos.flush();
+//			dos.writeBytes(cmd + "\n");
+//			dos.flush();
+//			dos.writeBytes("exit\n");
+//			dos.flush();
 			String line = null;
 			while ((line = dis.readLine()) != null) {
 				Log.d(TAG, "execCmd: " + line);
@@ -145,13 +181,13 @@ public final class RootCmd {
 			e.printStackTrace();
 			result.add(error);
 		} finally {
-			if (dos != null) {
-				try {
-					dos.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+//			if (dos != null) {
+//				try {
+//					dos.close();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			}
 			if (dis != null) {
 				try {
 					dis.close();
