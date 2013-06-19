@@ -2,7 +2,6 @@ package com.baidu.tcpdump;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -14,6 +13,7 @@ import test.framework.java.utils.PushUtility;
 import test.framework.java.utils.RootCmd;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -25,7 +25,6 @@ import android.os.PowerManager.WakeLock;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -255,6 +254,11 @@ public class MainActivity extends Activity {
 
 			}
 
+			//删除2个目录
+			log("删除/sdcard/zhangxin/apk & traffic目录");
+			RootCmd.execRootCmd("busybox rm -rf /sdcard/zhangxin/apk");
+			RootCmd.execRootCmd("busybox rm -rf /sdcard/zhangxin/traffic");
+			
 			// 2.安装 JPush、个推、BPush（5分钟和10分钟2个版本）， 共4个版本
 
 			// 2.1先卸载所有
@@ -305,7 +309,7 @@ public class MainActivity extends Activity {
 			
 //			final String resultPath = "/sdcard/zhangxin/result";
 			RootCmd.execRootCmd("busybox mkdir -p " + resultPath);
-
+			
 			// 收集设备信息
 			RootCmd.execRootCmd("getprop > " + resultPath + "device_info.txt");
 
@@ -445,7 +449,10 @@ public class MainActivity extends Activity {
 	}
 
 	private void power() {
-
+//		处于睡眠态
+//		KeyguardManager kgMgr = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+//
+//		boolean showing = kgMgr.inKeyguardRestrictedInputMode();
 		// 安装PowerTutor
 		AssetManager assetMgr = getAssets();
 
@@ -519,40 +526,44 @@ public class MainActivity extends Activity {
 		if (isAppend) {
 			token = " >> ";
 		} else {
-			token = " > ";
+			token = " >> ";
 		}
 
 		String dstBpush = resultPath + "traffic_bdpush.log";
 		String dstJpush = resultPath + "traffic_jpush.log";
 		String dstGetui = resultPath + "traffic_getui.log";
 		
-		RootCmd.execRootCmd("date >> " + dstBpush);
-		ArrayList<String> a = null;
-		a = RootCmd.execRootCmd("cat " + bpush);
-		a = RootCmd.execRootCmd(a.get(0));
-		for (String i : a) {
-			i = i.replace(";", ",");
-			RootCmd.execRootCmd("echo " + i + "';'" + token + dstBpush);
+		try {
+			RootCmd.execRootCmd("date >> " + dstBpush);
+			ArrayList<String> a = null;
+			a = RootCmd.execRootCmd("cat " + bpush);
+			a = RootCmd.execRootCmd(a.get(0));
+			for (String i : a) {
+				i = i.replace(";", ",");
+				RootCmd.execRootCmd("echo " + i + "';'" + token + dstBpush);
+			}
+			RootCmd.execRootCmd("echo >> " + dstBpush);
+			
+			RootCmd.execRootCmd("date >> " + dstJpush);
+			a = RootCmd.execRootCmd("cat " + jpush);
+			a = RootCmd.execRootCmd(a.get(0));
+			for (String i : a) {
+				i = i.replace(";", ",");
+				RootCmd.execRootCmd("echo " + i + " ';' " + token + dstJpush);
+			}
+			RootCmd.execRootCmd("echo >> " + dstJpush);
+			
+			RootCmd.execRootCmd("date >> " + dstGetui);
+			a = RootCmd.execRootCmd("cat " + getui);
+			a = RootCmd.execRootCmd(a.get(0));
+			for (String i : a) {
+				i = i.replace(";", ",");
+				RootCmd.execRootCmd("echo " + i + " ';' " + token + dstGetui);
+			}
+			RootCmd.execRootCmd("echo >> " + dstGetui);
+		} catch (Exception e) {
+			Log.e(TAG, Log.getStackTraceString(e));
 		}
-		RootCmd.execRootCmd("echo >> " + dstBpush);
-		
-		RootCmd.execRootCmd("date >> " + dstJpush);
-		a = RootCmd.execRootCmd("cat " + jpush);
-		a = RootCmd.execRootCmd(a.get(0));
-		for (String i : a) {
-			i = i.replace(";", ",");
-			RootCmd.execRootCmd("echo " + i + " ';' " + token + dstJpush);
-		}
-		RootCmd.execRootCmd("echo >> " + dstJpush);
-		
-		RootCmd.execRootCmd("date >> " + dstGetui);
-		a = RootCmd.execRootCmd("cat " + getui);
-		a = RootCmd.execRootCmd(a.get(0));
-		for (String i : a) {
-			i = i.replace(";", ",");
-			RootCmd.execRootCmd("echo " + i + " ';' " + token + dstGetui);
-		}
-		RootCmd.execRootCmd("echo >> " + dstGetui);
 	}
 
 	public void isConnected(View v) {
@@ -649,7 +660,7 @@ public class MainActivity extends Activity {
 		Intent intent = new Intent();
 		intent.setAction("android.intent.action.VIEW");
 		Uri content_url = Uri
-				.parse("http://pan.baidu.com/share/link?shareid=2445760335&uk=1208163734#dir/path=%2Fpushtest");
+				.parse("http://pan.baidu.com/share/link?shareid=998428214&uk=1208163734");
 		intent.setData(content_url);
 		startActivity(intent);
 	}
