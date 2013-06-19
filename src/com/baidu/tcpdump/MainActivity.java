@@ -472,10 +472,12 @@ public class MainActivity extends Activity {
 				"com.igexin.demo" };
 
 		RootCmd.execRootCmd("am startservice -a com.baidu.action.statistics.POWER");
-
+		sleep(2);
+		
 		for (String p : pkgs) {
 			RootCmd.execRootCmd("am startservice -a com.baidu.action.statistics.POWER -e package "
 					+ p);
+			sleep(1);
 		}
 
 		// logcat -d | grep 'I/PowerUsage' | awk -F ':' '{print $5}' | awk
@@ -492,7 +494,7 @@ public class MainActivity extends Activity {
 				RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> " + powerPath);
 				
 			}
-		}, 2000);
+		}, 1000);
 		
 	}
 
@@ -521,6 +523,8 @@ public class MainActivity extends Activity {
 		String dstBpush = resultPath + "traffic_bdpush.log";
 		String dstJpush = resultPath + "traffic_jpush.log";
 		String dstGetui = resultPath + "traffic_getui.log";
+		
+		RootCmd.execRootCmd("date >> " + dstBpush);
 		ArrayList<String> a = null;
 		a = RootCmd.execRootCmd("cat " + bpush);
 		a = RootCmd.execRootCmd(a.get(0));
@@ -528,23 +532,25 @@ public class MainActivity extends Activity {
 			i = i.replace(";", ",");
 			RootCmd.execRootCmd("echo " + i + "';'" + token + dstBpush);
 		}
-		RootCmd.execRootCmd("date >> " + dstBpush);
-
+		RootCmd.execRootCmd("echo >> " + dstBpush);
+		
+		RootCmd.execRootCmd("date >> " + dstJpush);
 		a = RootCmd.execRootCmd("cat " + jpush);
 		a = RootCmd.execRootCmd(a.get(0));
 		for (String i : a) {
 			i = i.replace(";", ",");
 			RootCmd.execRootCmd("echo " + i + " ';' " + token + dstJpush);
 		}
-		RootCmd.execRootCmd("date >> " + dstJpush);
-
+		RootCmd.execRootCmd("echo >> " + dstJpush);
+		
+		RootCmd.execRootCmd("date >> " + dstGetui);
 		a = RootCmd.execRootCmd("cat " + getui);
 		a = RootCmd.execRootCmd(a.get(0));
 		for (String i : a) {
 			i = i.replace(";", ",");
 			RootCmd.execRootCmd("echo " + i + " ';' " + token + dstGetui);
 		}
-		RootCmd.execRootCmd("date >> " + dstGetui);
+		RootCmd.execRootCmd("echo >> " + dstGetui);
 	}
 
 	public void isConnected(View v) {
