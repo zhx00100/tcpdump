@@ -114,8 +114,9 @@ public class MainActivity extends Activity {
 
 	public void testSuit(View v) {
 
+		mLogView.setText("");
 		new Thread(new Run()).start();
-
+		
 	}
 
 	public void tcpdump(View v) {
@@ -143,14 +144,13 @@ public class MainActivity extends Activity {
 				powerMonitor();
 				// stopPower();
 
-				runOnUiThread(new Runnable() {
-					public void run() {
-						if (view != null) {
-							Log.i(TAG, "停止测试！");
-							log("停止测试！！！");
-						}
-					}
-				});
+				if (view != null) {
+					Log.i(TAG, "停止测试！");
+					log("停止测试, 并写入logfile文件！！！");
+					
+					FileUtils.logToFile(mLogView.getText().toString(), logPath);
+				}
+			
 			}
 		}).start();
 	}
@@ -164,10 +164,6 @@ public class MainActivity extends Activity {
 	}
 
 	private void log(final String log) {
-		
-		if (!TextUtils.isEmpty(logPath)) {
-//			RootCmd.execRootCmd("echo ");
-		}
 		
 		runOnUiThread(new Runnable() {
 
@@ -485,20 +481,7 @@ public class MainActivity extends Activity {
 				return;
 			}
 
-			// 流量统计
-			List<String> t = RootCmd.execRootCmd("ls /proc/net/xt_qtaguid/stats");
-			if (t == null || t.isEmpty()) {
-				log("/proc/net/xt_qtaguid/stats文件不存在， 无法使用系统级统计流量，采用tcpdump抓包分析统计流量!");
-			} else {
-				log("开始统计流量...");
-				traffic(false);
-			}			
-
-			// 电量统计
-			log("开始统计电量...");
-			power();
-
-			log("测试套件启动完成！");
+			trafficAndPower(null);
 			// busybox netstat -anpt | egrep "5287|3000|5224|5225"
 			// //（5287百度、3000Jpush、5224 5225个推）
 
@@ -538,7 +521,6 @@ public class MainActivity extends Activity {
 
 		private void initLogPath() {
 			logPath = resultPath + "log.txt";
-			RootCmd.execRootCmd("busybox mkdir -p " + resultPath);
 		}
 	}
 
