@@ -56,8 +56,8 @@ public class TcpdumpService extends Service {
 
 		final String tcpdump = "/data/local/tcpdump";
 		
-		final String cmd = "%1s -w " + MainActivity.resultPath + "/%2s %3s &";
-			
+		final String cmd = "%1s -i any -w " + MainActivity.resultPath + "/%2s %3s &";
+		
 		new Thread() {
 
 			@Override
