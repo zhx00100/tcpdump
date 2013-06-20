@@ -14,7 +14,7 @@ import test.framework.java.utils.PushUtility;
 import test.framework.java.utils.RootCmd;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.KeyguardManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -194,9 +194,17 @@ public class MainActivity extends Activity {
 			//检查网络是否可用
 			if (Network.isConnected(getApplicationContext())) {
 				log("网络已连接!");
-				log("网络制式：" + Network.getNetworkType(Network.checkNetworkType(getApplicationContext())));
+				String c = "网络制式：" + Network.getNetworkType(Network.checkNetworkType(getApplicationContext()));
+				log(c);
+//				RootCmd.execRootCmd("echo " + c + " >> ")
 			} else {
 				log("网络未连接, 请联网后测试!");
+				Intent intent = new Intent(/*"android.settings.WIRELESS_SETTINGS"*/);
+				ComponentName cm = new ComponentName("com.android.phone","com.android.phone.Settings");
+				intent.setComponent(cm);
+//				intent.setAction("android.intent.action.VIEW");
+				startActivity(intent);
+			   
 				return;
 			}
 			
@@ -326,7 +334,9 @@ public class MainActivity extends Activity {
 			
 			// 收集设备信息
 			RootCmd.execRootCmd("getprop > " + resultPath + "device_info.txt");
-
+			String c = "Network type: " + Network.getNetworkType(Network.checkNetworkType(getApplicationContext()));
+			RootCmd.execRootCmd("echo >> " + resultPath + "device_info.txt");
+			RootCmd.execRootCmd("echo " + c + " >> " + resultPath + "device_info.txt");
 			// dump
 			log("启动tcpdump...");
 			tcpdump(null);
