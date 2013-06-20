@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 import android.os.Environment;
@@ -124,4 +126,49 @@ public class FileUtils {
             }
         }
     }
+    
+    public static synchronized void logToFile(String logStr, String path) {
+		SimpleDateFormat sDateFormat = new SimpleDateFormat(
+				"yyyy-MM-dd hh:mm:ss");
+		String time = sDateFormat.format(new Date());
+		String date = time.substring(0, 4).concat(time.substring(5, 7))
+				.concat(time.substring(8, 10));
+		String writeStr = time + " " + logStr + "\n\r";
+		try {
+			String sdPath = Environment.getExternalStorageDirectory()
+					.getAbsolutePath();
+			File dir = new File(sdPath, "pushservice/files");
+			if (!dir.exists()) {
+				File parentDir = new File(dir.getParent());
+				if (!parentDir.exists()) {
+					parentDir.mkdirs();
+				}
+				
+			} else {
+				SimpleDateFormat sDateFormatTemp = new SimpleDateFormat(
+						"yyyyMMdd");
+				//删除七天前的log
+				for (File logFile : dir.listFiles()) {
+					if (logFile.getName().startsWith("msg")) {
+						if (Integer.parseInt(date)
+								- Integer.parseInt(sDateFormatTemp.format(logFile
+										.lastModified())) >= 7) {
+							logFile.delete();
+						}
+					}
+				}
+			}
+
+			File logFile = new File(sdPath, "pushservice/files/msg" + date
+					+ ".log");
+
+			FileOutputStream fout = new FileOutputStream(logFile, true);
+			byte[] bytes = writeStr.getBytes();
+			
+			fout.write(bytes);
+			fout.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
