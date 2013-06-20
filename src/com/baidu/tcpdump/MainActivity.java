@@ -36,6 +36,8 @@ public class MainActivity extends Activity {
 
 	private static final String TAG = MainActivity.class.getSimpleName();
 
+	private static final String SHARED_URL = "http://pan.baidu.com/share/link?shareid=998428214&uk=1208163734";
+	
 	private static final String root = "/sdcard/zhangxin/result";
 
 	public static String resultPath = "";
@@ -754,7 +756,7 @@ public class MainActivity extends Activity {
 		Intent intent = new Intent();
 		intent.setAction("android.intent.action.VIEW");
 		Uri content_url = Uri
-				.parse("http://pan.baidu.com/share/link?shareid=998428214&uk=1208163734");
+				.parse(SHARED_URL);
 		intent.setData(content_url);
 		startActivity(intent);
 	}
