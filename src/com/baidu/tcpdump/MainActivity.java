@@ -376,48 +376,56 @@ public class MainActivity extends Activity {
 					.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
 
 			boolean isAllConnected = true;
+			boolean bpush = false;
+			boolean jpush = false;
+			boolean getui = false;
+			
+			int bpushConnectCount = 0;
+			int jpushConnectCount = 0;
+			int getuiConnectCount = 0;
+			
 			if (netstat.isEmpty()) {
 				log("错误！长连接均未建立！！！");
 				isAllConnected = false;
 			} else {
-				boolean bpush = false;
-				boolean jpush = false;
-				boolean getui = false;
-
+				
 				for (String item : netstat) {
 					if (item.contains(":5287")) {
 						if (item.contains("ESTABLISHED")) {
 							bpush = true;
+							bpushConnectCount++;
 						}
 					}
 
 					if (item.contains(":3000")) {
 						if (item.contains("ESTABLISHED")) {
 							jpush = true;
+							jpushConnectCount++;
 						}
 					}
 
 					if (item.contains(":5224") || item.contains(":5225")) {
 						if (item.contains("ESTABLISHED")) {
 							getui = true;
+							getuiConnectCount++;
 						}
 					}
 				}
 
 				if (bpush) {
-					log("baidupush长连接建立成功！");
+					log("baidupush长连接建立成功！连接数 = " + bpushConnectCount);
 				} else {
 					log("错误！baidupush长连接未建立！");
 				}
 
 				if (jpush) {
-					log("jpush长连接建立成功！");
+					log("jpush长连接建立成功！连接数 = " + jpushConnectCount);
 				} else {
 					log("错误！jpush长连接未建立！");
 				}
 
 				if (getui) {
-					log("个推长连接建立成功！");
+					log("个推长连接建立成功！连接数 = " + getuiConnectCount);
 				} else {
 					log("错误！个推长连接未建立！");
 				}
@@ -427,6 +435,13 @@ public class MainActivity extends Activity {
 
 			if (!isAllConnected) {
 				log("有未建立长连接的应用！\n请根据提示或者【查询长连接】打开对应应用重新绑定！\n确保长连接都存在， 然后点击【统计流量、电量】");
+				return;
+			}
+			
+			if (bpushConnectCount ==1 && jpushConnectCount == 1 && getuiConnectCount == 1) {
+				
+			} else {
+				log("长连接数目不正确！\n请根据提示或者【查询长连接】打开对应应用重新绑定！\n确保长连接都==1， 然后点击【统计流量、电量】");
 				return;
 			}
 
@@ -600,6 +615,10 @@ public class MainActivity extends Activity {
 
 				String content = "";
 
+				int bpushConnectCount = 0;
+				int jpushConnectCount = 0;
+				int getuiConnectCount = 0;
+				
 				if (netstat.isEmpty()) {
 					content = "错误！长连接均未建立！！！";
 				} else {
@@ -611,36 +630,39 @@ public class MainActivity extends Activity {
 						if (item.contains(":5287")) {
 							if (item.contains("ESTABLISHED")) {
 								bpush = true;
+								bpushConnectCount++;
 							}
 						}
 
 						if (item.contains(":3000")) {
 							if (item.contains("ESTABLISHED")) {
 								jpush = true;
+								jpushConnectCount++;
 							}
 						}
 
 						if (item.contains(":5224") || item.contains(":5225")) {
 							if (item.contains("ESTABLISHED")) {
 								getui = true;
+								getuiConnectCount++;
 							}
 						}
 					}
 
 					if (bpush) {
-						content += "baidupush长连接已建立成功！" + "\n";
+						content += "baidupush长连接已建立成功！连接数 = " + bpushConnectCount + "\n";
 					} else {
 						content += "错误！baidupush长连接未建立！" + "\n";
 					}
 
 					if (jpush) {
-						content += "jpush长连接已建立成功！" + "\n";
+						content += "jpush长连接已建立成功！连接数 = " + jpushConnectCount + "\n";
 					} else {
 						content += "错误！jpush长连接未建立！" + "\n";
 					}
 
 					if (getui) {
-						content += "个推长连接已建立成功！" + "\n";
+						content += "个推长连接已建立成功！连接数 = " + getuiConnectCount + "\n";
 					} else {
 						content += "错误！个推长连接未建立！" + "\n";
 					}
