@@ -135,33 +135,36 @@ public class FileUtils {
 				.concat(time.substring(8, 10));
 		String writeStr = time + " " + logStr + "\n\r";
 		try {
-			String sdPath = Environment.getExternalStorageDirectory()
-					.getAbsolutePath();
-			File dir = new File(sdPath, "pushservice/files");
-			if (!dir.exists()) {
-				File parentDir = new File(dir.getParent());
-				if (!parentDir.exists()) {
-					parentDir.mkdirs();
-				}
-				
-			} else {
-				SimpleDateFormat sDateFormatTemp = new SimpleDateFormat(
-						"yyyyMMdd");
-				//删除七天前的log
-				for (File logFile : dir.listFiles()) {
-					if (logFile.getName().startsWith("msg")) {
-						if (Integer.parseInt(date)
-								- Integer.parseInt(sDateFormatTemp.format(logFile
-										.lastModified())) >= 7) {
-							logFile.delete();
-						}
-					}
-				}
-			}
+//			String sdPath = Environment.getExternalStorageDirectory()
+//					.getAbsolutePath();
+//			File dir = new File(sdPath, "pushservice/files");
+//			if (!dir.exists()) {
+//				File parentDir = new File(dir.getParent());
+//				if (!parentDir.exists()) {
+//					parentDir.mkdirs();
+//				}
+//				
+//			} else {
+//				SimpleDateFormat sDateFormatTemp = new SimpleDateFormat(
+//						"yyyyMMdd");
+//				//删除七天前的log
+//				for (File logFile : dir.listFiles()) {
+//					if (logFile.getName().startsWith("msg")) {
+//						if (Integer.parseInt(date)
+//								- Integer.parseInt(sDateFormatTemp.format(logFile
+//										.lastModified())) >= 7) {
+//							logFile.delete();
+//						}
+//					}
+//				}
+//			}
 
-			File logFile = new File(sdPath, "pushservice/files/msg" + date
-					+ ".log");
+//			File logFile = new File(sdPath, "pushservice/files/msg" + date
+//					+ ".log");
 
+			// added
+			File logFile = new File(path);
+			
 			FileOutputStream fout = new FileOutputStream(logFile, true);
 			byte[] bytes = writeStr.getBytes();
 			
