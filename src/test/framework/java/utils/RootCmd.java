@@ -21,6 +21,8 @@ public final class RootCmd {
 	private static final String TAG = "RootCmd";
 	private static boolean mHaveRoot = false;
 
+	public static final String ERROR = "no su";
+	
 	// 判断机器Android是否已经root，即是否获取root权限
 	public static boolean haveRoot() {
 		if (!mHaveRoot) {
@@ -46,8 +48,6 @@ public final class RootCmd {
 	public static ArrayList<String> execRootCmd(String cmd) {
 		
 		ArrayList<String> result = new ArrayList<String>();
-		
-		String error = "no su";
 		
 //		DataOutputStream dos = null;
 //		DataInputStream dis = null;
@@ -88,8 +88,9 @@ public final class RootCmd {
 
 			p.waitFor();
 		} catch (Exception e) {
-			e.printStackTrace();
-			result.add(error);
+			Log.e(TAG, Log.getStackTraceString(e));
+			result.clear();
+			result.add(ERROR);
 		} finally {
 			if (output != null) {
 				try {
@@ -142,6 +143,7 @@ public final class RootCmd {
 				}
 			}
 		}
+		
 		return result;
 	}
 	
