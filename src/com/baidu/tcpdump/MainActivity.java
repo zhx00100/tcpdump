@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
@@ -37,11 +39,11 @@ public class MainActivity extends Activity {
 	private static final String TAG = MainActivity.class.getSimpleName();
 
 	private static final String SHARED_URL = "http://pan.baidu.com/share/link?shareid=998428214&uk=1208163734";
-	
+
 	private static final String root = "/sdcard/zhangxin/result";
 
 	public static String resultPath = "";
-	
+
 	private static String logPath = "";
 
 	private TextView mLogView;
@@ -49,6 +51,8 @@ public class MainActivity extends Activity {
 	private WakeLock wl;
 
 	private Handler mHandler = new Handler();
+
+	public long mStartTime;
 
 	@Override
 	protected void onResume() {
@@ -118,7 +122,7 @@ public class MainActivity extends Activity {
 
 		mLogView.setText("");
 		new Thread(new Run()).start();
-		
+
 	}
 
 	public void tcpdump(View v) {
@@ -147,12 +151,30 @@ public class MainActivity extends Activity {
 				// stopPower();
 
 				if (view != null) {
-					Log.i(TAG, "停止测试！");
-					log("停止测试, 并写入logfile文件！！！");
+					DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+					String stopTime = dateFormat.format(new Date());
+					long stopTimeInMils = System.currentTimeMillis();
 					
+//					Calendar c = Calendar.getInstance();
+////					c.setTimeZone(TimeZone.getTimeZone("GTM"));
+//					c.setTimeInMillis(stopTimeInMils - mStartTime);
+//					
+//					DateFormat dateFormat2 = new SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
+//					dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
+//					String testTime = dateFormat2.format(c.getTime());
+					long testTime = (stopTimeInMils - mStartTime) / 1000;
+					long hour = testTime / 3600;
+					long min = testTime % 3600 / 60;
+					long second = testTime % 60;
+					
+					String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min, second);
+					
+					Log.i(TAG, "停止测试！");
+					log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间：" + s);
+
 					FileUtils.logToFile(mLogView.getText().toString(), logPath);
 				}
-			
+
 			}
 		}).start();
 	}
@@ -166,16 +188,16 @@ public class MainActivity extends Activity {
 	}
 
 	private void log(final String log) {
-		
+
 		runOnUiThread(new Runnable() {
 
 			@Override
 			public void run() {
 
 				int originCount = mLogView.getLineCount();
-				
+
 				mLogView.append(log + "\n");
-//				mLogView.setText(mLogView.getText().toString() + log + "\n");
+				// mLogView.setText(mLogView.getText().toString() + log + "\n");
 				//
 				// mLogView.scrollTo(0, mLogView.getBottom());
 
@@ -193,8 +215,12 @@ public class MainActivity extends Activity {
 				double viewCount = Math.floor(height / lineHeight);// 可见区域最大显示多少行
 				if (lineCount > viewCount) {// 总行数大于可见区域显示的行数时则滚动
 
-					mLogView.scrollTo(0, (int) (lineHeight * (lineCount - viewCount)));
-					
+					mLogView.scrollTo(0,
+							(int) (lineHeight * (lineCount - viewCount)));
+
+				} else if (scrollY != 0) {
+
+					mLogView.scrollTo(0, 0);
 				}
 
 			}
@@ -203,21 +229,25 @@ public class MainActivity extends Activity {
 
 	private class Run implements Runnable {
 		public void run() {
+
+			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+			String startTime = dateFormat.format(new Date());
+			mStartTime = System.currentTimeMillis();
 			
-			log("开始测试!!!");
-			
+			log("开始测试!!!\n开始时间：" + startTime);
+
 			// check root permission
-			if (PushUtility.isRooted(getApplicationContext())) {
+			if (Device.isRooted()) {
 				log("具有root权限的设备！");
 			} else {
-				log("设备没有root！！！尝试获取临时root权限...");
-				log("获取成功后， 请重新运行【一键测试】");
-				log("root过程约持续60秒！");
-				runOnUiThread(new Runnable() {
-					public void run() {
-						root(null);
-					}
-				});
+				log("设备没有root或者在权限管理器里被拒绝授予root了！！！\n请点击【一键root】尝试获取临时root权限或在权限管理器授予root权限...");
+				// log("获取成功后， 请重新运行【一键测试】");
+				// log("root过程约持续60秒！");
+				// runOnUiThread(new Runnable() {
+				// public void run() {
+				// root(null);
+				// }
+				// });
 
 				return;
 			}
@@ -244,35 +274,39 @@ public class MainActivity extends Activity {
 
 			AssetManager assetMgr = getAssets();
 
-			// ArrayList<String> b = RootCmd.execRootCmd("busybox");
-			// if (!b.isEmpty() // 存在busybox， 则不安装
-			// && TextUtils.equals(b.get(0).toLowerCase(), "busybox")) {
-			//
-			// log("设备中有busybox！");
-			// } else {
-			// log("安装busybox...");
-			//
-			// try {
-			// String path = "/sdcard/zhangxin/busybox/busybox";
-			// FileUtils.copyFile(assetMgr.open("busybox"), path);
-			//
-			// // remount /system
-			// // "mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system"
-			// RootCmd.execRootCmd("busybox mount -o remount,rw /system");
-			//
-			// // cp busybox /system/bin
-			// RootCmd.execRootCmd("cat " + path + " > "
-			// + "/system/bin/busybox");
-			// RootCmd.execRootCmd("chmod 777 /system/bin/busybox");
-			//
-			// RootCmd.execRootCmd("busybox --install /system/bin");
-			//
-			// log("安装busybox成功！");
-			// } catch (IOException e1) {
-			//
-			// e1.printStackTrace();
-			// }
-			// }
+			ArrayList<String> b = RootCmd.execRootCmd("busybox");
+			if (!b.isEmpty() // 存在busybox， 则不安装
+					&& b.size() > 0 && b.get(0).contains("BusyBox")) {
+
+				log("设备中有busybox！");
+				log(b.get(0));
+			} else {
+				log("安装busybox...");
+
+				try {
+					String path = "/sdcard/zhangxin/busybox/busybox";
+					FileUtils.copyFile(assetMgr.open("busybox"), path);
+
+					// remount /system
+					// "mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system"
+					log("重新挂载/system分区，使可写");
+					RootCmd.execRootCmd("mount -o remount,rw /system");
+
+					// cp busybox /system/bin
+					RootCmd.execRootCmd("cat " + path + " > "
+							+ "/system/bin/busybox");
+					RootCmd.execRootCmd("chmod 777 /system/bin/busybox");
+
+					RootCmd.execRootCmd("busybox --install /system/bin");
+
+					log("还原/system分区只读属性");
+					RootCmd.execRootCmd("mount -o remount,ro /system");
+					log("安装busybox成功！");
+				} catch (IOException e1) {
+
+					e1.printStackTrace();
+				}
+			}
 
 			// 1.第一步：安装tcpdump
 			ArrayList<String> r = RootCmd.execRootCmd("ls /data/local/tcpdump");
@@ -379,9 +413,11 @@ public class MainActivity extends Activity {
 
 			// 2.3启动
 
+			List<String> res = null;
 			// 启动 个推
 			log("开始启动个推...");
-			RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
+			res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
+			
 			sleep(20);
 			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
@@ -474,11 +510,12 @@ public class MainActivity extends Activity {
 				return;
 			}
 
-			if (bpushConnectCount == 1 && jpushConnectCount == 1
+			if (bpushConnectCount == 1
+					&& jpushConnectCount == 1
 					&& getuiConnectCount == 1) {
 
 			} else {
-				log("长连接数目不正确, 这可能是bug！\n请点击重运行【一键测试】！\n确保长连接都==1， 然后点击【统计流量、电量】");
+				log("长连接数目不正确, 这可能是bug！\n请点击重运行【一键测试】！\n确保长连接都==1!");
 				clearResultPath();
 				return;
 			}
@@ -513,10 +550,10 @@ public class MainActivity extends Activity {
 			DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
 			String dir = dateFormat.format(new Date());
 			resultPath = root + "/" + dir + "/";
-			
+
 			RootCmd.execRootCmd("busybox mkdir -p " + resultPath);
 		}
-		
+
 		private void clearResultPath() {
 			RootCmd.execCmd("busybox rm -rf " + resultPath);
 		}
@@ -733,8 +770,16 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void run() {
+//				mLogView.setText("");
+				DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				String startTime = dateFormat.format(new Date());
+				mStartTime = System.currentTimeMillis();
+				
+				log("开始流量、电量统计!!!\n开始时间：" + startTime);
+				
 				// 流量统计
-				List<String> t = RootCmd.execRootCmd("ls /proc/net/xt_qtaguid/stats");
+				List<String> t = RootCmd
+						.execRootCmd("ls /proc/net/xt_qtaguid/stats");
 				if (t == null || t.isEmpty()) {
 					log("/proc/net/xt_qtaguid/stats文件不存在， 无法使用系统级统计流量，采用tcpdump抓包分析统计流量!");
 				} else {
@@ -755,8 +800,7 @@ public class MainActivity extends Activity {
 	public void update(View v) {
 		Intent intent = new Intent();
 		intent.setAction("android.intent.action.VIEW");
-		Uri content_url = Uri
-				.parse(SHARED_URL);
+		Uri content_url = Uri.parse(SHARED_URL);
 		intent.setData(content_url);
 		startActivity(intent);
 	}

@@ -34,7 +34,7 @@ public class Device {
 	/**
 	 * 是否是root的设备
 	 */
-	public boolean isRooted() {
+	public static boolean isRooted() {
 		
 		boolean isRooted = false;
 		
