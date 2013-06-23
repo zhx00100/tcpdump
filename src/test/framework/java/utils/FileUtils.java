@@ -2,12 +2,17 @@ package test.framework.java.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
 import android.os.Environment;
@@ -174,4 +179,39 @@ public class FileUtils {
 			e.printStackTrace();
 		}
 	}
+    
+    /**
+     * 行读取文件， 并保存到list中
+     * @param file
+     * @return
+     */
+    public static List<String> readLine(File file) {
+        LineNumberReader input = null;
+        ArrayList<String> result = new ArrayList<String>();
+        
+        try {
+            input = new LineNumberReader(new FileReader(file));
+            
+            String line = null;
+            
+            while ((line = input.readLine()) != null) {
+                result.add(line);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        return result;
+    }
 }
