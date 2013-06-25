@@ -2,12 +2,17 @@ package test.framework.java.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
 import android.os.Environment;
@@ -174,4 +179,38 @@ public class FileUtils {
 			e.printStackTrace();
 		}
 	}
+    
+    public static List<String> readLines(File file) {
+    	List<String> result = new ArrayList<String>();
+    	LineNumberReader input = null;
+    	try {
+			input = new LineNumberReader(new FileReader(file));
+			String line = null;
+			
+			while ((line = input.readLine()) != null) {
+				Log.i("FileUtils", line);
+				result.add(line);
+			}
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			result = null;
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+    	
+    	return result;
+    	
+    }
 }
