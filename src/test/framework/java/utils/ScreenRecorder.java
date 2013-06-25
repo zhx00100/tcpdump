@@ -89,7 +89,7 @@ public class ScreenRecorder {
 					//快进/慢放控制变量，单位（毫秒）： + ：慢放， - ：快进
 					int delta = 0;
 					
-					for (int i = 1; i < len; i++) {
+					for (int i = 1; i < len; i++) {						
 
 						e = event.get(i);
 						time = (int) (e.time * 1000);
