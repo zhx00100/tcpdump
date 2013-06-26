@@ -5,18 +5,20 @@ import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
 import test.framework.java.utils.Network;
 import test.framework.java.utils.PushUtility;
+import test.framework.java.utils.Reflect;
 import test.framework.java.utils.RootCmd;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -32,6 +34,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.jayway.android.robotium.solo.Solo;
 
 @SuppressLint("SdCardPath")
 public class MainActivity extends Activity {
@@ -54,6 +58,9 @@ public class MainActivity extends Activity {
 
 	public long mStartTime;
 
+
+	Instrumentation mInstrumentation;
+	
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -151,26 +158,30 @@ public class MainActivity extends Activity {
 				// stopPower();
 
 				if (view != null) {
-					DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+					DateFormat dateFormat = new SimpleDateFormat(
+							"yyyy/MM/dd HH:mm:ss");
 					String stopTime = dateFormat.format(new Date());
 					long stopTimeInMils = System.currentTimeMillis();
-					
-//					Calendar c = Calendar.getInstance();
-////					c.setTimeZone(TimeZone.getTimeZone("GTM"));
-//					c.setTimeInMillis(stopTimeInMils - mStartTime);
-//					
-//					DateFormat dateFormat2 = new SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
-//					dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
-//					String testTime = dateFormat2.format(c.getTime());
+
+					// Calendar c = Calendar.getInstance();
+					// // c.setTimeZone(TimeZone.getTimeZone("GTM"));
+					// c.setTimeInMillis(stopTimeInMils - mStartTime);
+					//
+					// DateFormat dateFormat2 = new
+					// SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
+					// dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
+					// String testTime = dateFormat2.format(c.getTime());
 					long testTime = (stopTimeInMils - mStartTime) / 1000;
 					long hour = testTime / 3600;
 					long min = testTime % 3600 / 60;
 					long second = testTime % 60;
-					
-					String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min, second);
-					
+
+					String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min,
+							second);
+
 					Log.i(TAG, "停止测试！");
-					log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间：" + s);
+					log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime
+							+ "\n测试持续时间：" + s);
 
 					FileUtils.logToFile(mLogView.getText().toString(), logPath);
 				}
@@ -233,7 +244,7 @@ public class MainActivity extends Activity {
 			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 			String startTime = dateFormat.format(new Date());
 			mStartTime = System.currentTimeMillis();
-			
+
 			log("开始测试!!!\n开始时间：" + startTime);
 
 			// check root permission
@@ -416,8 +427,9 @@ public class MainActivity extends Activity {
 			List<String> res = null;
 			// 启动 个推
 			log("开始启动个推...");
-			res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
-			
+			res = RootCmd
+					.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
+
 			sleep(20);
 			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
@@ -510,8 +522,7 @@ public class MainActivity extends Activity {
 				return;
 			}
 
-			if (bpushConnectCount == 1
-					&& jpushConnectCount == 1
+			if (bpushConnectCount == 1 && jpushConnectCount == 1
 					&& getuiConnectCount == 1) {
 
 			} else {
@@ -763,6 +774,61 @@ public class MainActivity extends Activity {
 	public void root(View v) {
 		Device device = new Device(getApplicationContext());
 		device.dostuff();
+		
+//		try {
+//			mInstrumentation = (Instrumentation) Reflect.getObjectProperty(MainActivity.this,
+//					1, "mInstrumentation");
+//		} catch (IllegalArgumentException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (NoSuchFieldException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IllegalAccessException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} finally {
+//			
+//		}
+//
+//		new Thread(new Runnable() {
+//
+//			@Override
+//			public void run() {
+//				// TODO Auto-generated method stub
+//				if (mInstrumentation != null) {
+//					Solo mSolo = new Solo(mInstrumentation, MainActivity.this);
+//					String name = mSolo.getCurrentActivity().getComponentName()
+//							.flattenToString();
+//					Log.i(TAG, "cur activity: " + name);
+//					
+//					
+//					mSolo.clickOnButton("查询长连接");
+//					
+////					mSolo.sleep(3);
+//					
+////					Intent intent = new Intent(Intent.ACTION_MAIN);
+////					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);// 注意
+////					intent.addCategory(Intent.CATEGORY_HOME);
+////					startActivity(intent);
+//					
+////					mSolo.waitForActivity("launcher");
+//					
+////					String text = Pattern.compile("settings",Pattern.CASE_INSENSITIVE).toString();
+////					mSolo.clickOnText("Settings");
+//					
+////					mSolo.waitForActivity("settings");
+//					
+//					//获得当前正在运行的activity
+////					ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);  
+////					List<RunningTaskInfo> runningTasks = manager.getRunningAppProcesses()getRunningTasks(5);  
+////					RunningTaskInfo cinfo = runningTasks.get(0);  
+////					ComponentName component = cinfo.topActivity;  
+////					Log.e("currentactivity", component.getClassName());
+//					//得到的是当前activity的包加类名
+//				}
+//			}
+//		}).start();
 	}
 
 	public void trafficAndPower(View v) {
@@ -770,13 +836,14 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void run() {
-//				mLogView.setText("");
-				DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				// mLogView.setText("");
+				DateFormat dateFormat = new SimpleDateFormat(
+						"yyyy/MM/dd HH:mm:ss");
 				String startTime = dateFormat.format(new Date());
 				mStartTime = System.currentTimeMillis();
-				
+
 				log("开始流量、电量统计!!!\n开始时间：" + startTime);
-				
+
 				// 流量统计
 				List<String> t = RootCmd
 						.execRootCmd("ls /proc/net/xt_qtaguid/stats");
