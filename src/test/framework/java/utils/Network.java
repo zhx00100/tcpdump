@@ -349,6 +349,13 @@ public class Network {
 		}
 	}
 	
+	public static int getNetworkPreference(Context context) {
+		ConnectivityManager connectivityManager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		
+		return connectivityManager.getNetworkPreference();
+	}
+	
 	/**
 	 * 设置wifi优于移动数据
 	 */
