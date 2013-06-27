@@ -1,0 +1,5 @@
+export ViewServer.java to jar
+dx --dex --output=/../../../ViewServer.jar /../../......./ViewServer.jar
+
+....
+参考pm/monkey/am等
