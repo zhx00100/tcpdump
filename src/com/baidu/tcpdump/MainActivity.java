@@ -5,10 +5,8 @@ import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
@@ -30,6 +28,7 @@ import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -90,7 +89,7 @@ public class MainActivity extends Activity {
 		if (wl == null) {
 
 			PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-			wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK
+			wl = pm.newWakeLock(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
 					| PowerManager.ACQUIRE_CAUSES_WAKEUP
 					| PowerManager.ON_AFTER_RELEASE, "tcpdump");
 			wl.acquire();
@@ -203,8 +202,6 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 
-				int originCount = mLogView.getLineCount();
-
 				mLogView.append(log + "\n");
 				// mLogView.setText(mLogView.getText().toString() + log + "\n");
 				//
@@ -217,9 +214,9 @@ public class MainActivity extends Activity {
 				/**
 				 * textView不可见内容的高度，可以理解为偏移位移
 				 */
-				int maxY = (mLogView.getLineCount() * mLogView.getLineHeight()
-						+ mLogView.getPaddingTop() + mLogView
-							.getPaddingBottom()) - mLogView.getHeight();
+//				int maxY = (mLogView.getLineCount() * mLogView.getLineHeight()
+//						+ mLogView.getPaddingTop() + mLogView
+//							.getPaddingBottom()) - mLogView.getHeight();
 
 				double viewCount = Math.floor(height / lineHeight);// 可见区域最大显示多少行
 				if (lineCount > viewCount) {// 总行数大于可见区域显示的行数时则滚动
