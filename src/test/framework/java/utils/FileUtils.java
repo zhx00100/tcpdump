@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
+import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
 
@@ -213,4 +214,29 @@ public class FileUtils {
     	return result;
     	
     }
+    
+    /**
+     * copy from res/raw to /data/data/apkdir/files/...
+     * @param resourceid
+     * @param filename
+     * @param applicationContext
+     * @throws Exception
+     */
+    public static void SaveIncludedFileIntoFilesFolder(int resourceid, String filename, Context applicationContext) throws Exception {
+		InputStream is = applicationContext.getResources().openRawResource(resourceid);
+		FileOutputStream fos = applicationContext.openFileOutput(filename, Context.MODE_WORLD_READABLE);
+		byte[] bytebuf = new byte[1024];
+		int read;
+		while ((read = is.read(bytebuf)) >= 0) {
+			fos.write(bytebuf, 0, read);
+		}
+		is.close();
+		fos.getChannel().force(true);
+		fos.flush();
+		fos.close();
+	}
+    
+    public static File getFilesDir(Context applicationContext) {
+		return applicationContext.getFilesDir();
+	}
 }

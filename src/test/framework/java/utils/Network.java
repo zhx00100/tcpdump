@@ -64,8 +64,12 @@ public class Network {
 		public static final int TYPE_ERROR = -1;
 
 	}
+	
+	public static String getType(Context applicationContext) {
+		return getNetworkType(checkNetworkType(applicationContext));
+	}
 
-	public static String getNetworkType(int checkNetworkType) {
+	private static String getNetworkType(int checkNetworkType) {
 		final String networkType;
 		
 		switch (checkNetworkType) {

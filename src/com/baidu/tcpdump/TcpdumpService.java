@@ -1,9 +1,6 @@
 package com.baidu.tcpdump;
 
-import java.io.IOException;
-
 import test.framework.java.utils.RootCmd;
-import test.framework.java.utils.ShellCommandInvoke;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
@@ -54,7 +51,7 @@ public class TcpdumpService extends Service {
 
 		// RootCmd.execRootCmd("mkdir -p /sdcard/zhangxin/tcpdump/aaa");
 
-		final String tcpdump = "/data/local/tcpdump";
+		final String tcpdump = "tcpdump";
 		
 		final String cmd = "%1s -i any -w " + MainActivity.resultPath + "/%2s %3s &";
 		
