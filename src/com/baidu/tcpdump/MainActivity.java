@@ -333,7 +333,7 @@ public class MainActivity extends Activity {
 			
 			RootCmd.execRootCmd("busybox chmod 777 /system/bin/" + file);
 
-			log("还原/system分区只读属性");
+//			log("还原/system分区只读属性");
 			RootCmd.execRootCmd("busybox mount -o remount,ro /system");
 			log("安装tcpdump成功！");
 			
