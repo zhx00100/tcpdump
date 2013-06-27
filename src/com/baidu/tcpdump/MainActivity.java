@@ -134,14 +134,19 @@ public class MainActivity extends Activity {
 		startService(service);
 	}
 
+	private void killTcpdump() {
+		RootCmd.execRootCmd("busybox killall tcpdump");
+		RootCmd.execRootCmd("busybox killall tcpdump");
+		log("停止所有tcpdump进程...");
+	}
+	
 	public void stopTcpdump(View v) {
-		final View view = v;
+		killTcpdump();
+		
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
-				RootCmd.execRootCmd("busybox killall tcpdump");
-				log("停止所有tcpdump进程...");
 
 				log("流量统计...");
 				traffic(true);
@@ -150,30 +155,34 @@ public class MainActivity extends Activity {
 				powerMonitor();
 				// stopPower();
 
-				if (view != null) {
-					DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					String stopTime = dateFormat.format(new Date());
-					long stopTimeInMils = System.currentTimeMillis();
-					
-//					Calendar c = Calendar.getInstance();
-////					c.setTimeZone(TimeZone.getTimeZone("GTM"));
-//					c.setTimeInMillis(stopTimeInMils - mStartTime);
-//					
-//					DateFormat dateFormat2 = new SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
-//					dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
-//					String testTime = dateFormat2.format(c.getTime());
-					long testTime = (stopTimeInMils - mStartTime) / 1000;
-					long hour = testTime / 3600;
-					long min = testTime % 3600 / 60;
-					long second = testTime % 60;
-					
-					String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min, second);
-					
-					Log.i(TAG, "停止测试！");
-					log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间：" + s);
+				// if (view != null) {
+				DateFormat dateFormat = new SimpleDateFormat(
+						"yyyy/MM/dd HH:mm:ss");
+				String stopTime = dateFormat.format(new Date());
+				long stopTimeInMils = System.currentTimeMillis();
 
-					FileUtils.logToFile(mLogView.getText().toString(), logPath);
-				}
+				// Calendar c = Calendar.getInstance();
+				// // c.setTimeZone(TimeZone.getTimeZone("GTM"));
+				// c.setTimeInMillis(stopTimeInMils - mStartTime);
+				//
+				// DateFormat dateFormat2 = new
+				// SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
+				// dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
+				// String testTime = dateFormat2.format(c.getTime());
+				long testTime = (stopTimeInMils - mStartTime) / 1000;
+				long hour = testTime / 3600;
+				long min = testTime % 3600 / 60;
+				long second = testTime % 60;
+
+				String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min,
+						second);
+
+				Log.i(TAG, "停止测试！");
+				log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间："
+						+ s);
+
+				FileUtils.logToFile(mLogView.getText().toString(), logPath);
+				// }
 
 			}
 		}).start();
@@ -233,7 +242,7 @@ public class MainActivity extends Activity {
 			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 			String startTime = dateFormat.format(new Date());
 			mStartTime = System.currentTimeMillis();
-			
+
 			log("开始测试!!!\n开始时间：" + startTime);
 
 			// check root permission
@@ -311,10 +320,6 @@ public class MainActivity extends Activity {
 			// 1.第一步：安装tcpdump
 			ArrayList<String> r = RootCmd.execRootCmd("ls /data/local/tcpdump");
 			if (r.isEmpty()) {
-				// 0.清除tcpdump
-				log("kill all processes of tcpdump");
-				stopTcpdump(null);
-
 				log("开始安装tcpdump...");
 
 				InputStream is = null;
@@ -343,6 +348,10 @@ public class MainActivity extends Activity {
 			} else {
 
 			}
+			
+			// 0.清除tcpdump
+			log("kill all processes of tcpdump");
+			killTcpdump();
 
 			// 删除2个目录
 			log("删除/sdcard/zhangxin/apk & traffic目录");
@@ -416,8 +425,9 @@ public class MainActivity extends Activity {
 			List<String> res = null;
 			// 启动 个推
 			log("开始启动个推...");
-			res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
-			
+			res = RootCmd
+					.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
+
 			sleep(20);
 			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
@@ -445,7 +455,7 @@ public class MainActivity extends Activity {
 			log("等待建立长连接");
 			sleep(10);
 			ArrayList<String> netstat = RootCmd
-					.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
+					.execRootCmd("busybox netstat -anpt | busybox awk '/5010|5224|5225|3000/'");
 
 			boolean isAllConnected = true;
 			boolean bpush = false;
@@ -462,7 +472,7 @@ public class MainActivity extends Activity {
 			} else {
 
 				for (String item : netstat) {
-					if (item.contains(":5287")) {
+					if (item.contains(":5010")) {
 						if (item.contains("ESTABLISHED")) {
 							bpush = true;
 							bpushConnectCount++;
@@ -510,8 +520,7 @@ public class MainActivity extends Activity {
 				return;
 			}
 
-			if (bpushConnectCount == 1
-					&& jpushConnectCount == 1
+			if (bpushConnectCount == 1 && jpushConnectCount == 1
 					&& getuiConnectCount == 1) {
 
 			} else {
@@ -521,8 +530,8 @@ public class MainActivity extends Activity {
 			}
 
 			trafficAndPower(null);
-			// busybox netstat -anpt | egrep "5287|3000|5224|5225"
-			// //（5287百度、3000Jpush、5224 5225个推）
+			// busybox netstat -anpt | egrep "5010|3000|5224|5225"
+			// //（5010百度、3000Jpush、5224 5225个推）
 
 			// back
 			// SystemKey.back(getApplicationContext());
@@ -689,7 +698,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				ArrayList<String> netstat = RootCmd
-						.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
+						.execRootCmd("busybox netstat -anpt | busybox awk '/5010|5224|5225|3000/'");
 
 				String content = "";
 
@@ -705,7 +714,7 @@ public class MainActivity extends Activity {
 					boolean getui = false;
 
 					for (String item : netstat) {
-						if (item.contains(":5287")) {
+						if (item.contains(":5010")) {
 							if (item.contains("ESTABLISHED")) {
 								bpush = true;
 								bpushConnectCount++;
@@ -770,13 +779,14 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void run() {
-//				mLogView.setText("");
-				DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				// mLogView.setText("");
+				DateFormat dateFormat = new SimpleDateFormat(
+						"yyyy/MM/dd HH:mm:ss");
 				String startTime = dateFormat.format(new Date());
 				mStartTime = System.currentTimeMillis();
-				
+
 				log("开始流量、电量统计!!!\n开始时间：" + startTime);
-				
+
 				// 流量统计
 				List<String> t = RootCmd
 						.execRootCmd("ls /proc/net/xt_qtaguid/stats");
