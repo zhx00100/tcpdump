@@ -54,6 +54,8 @@ public class MainActivity extends Activity {
 
 	public long mStartTime;
 
+	String mBusybox = "/system/bin/busybox";
+	
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -137,19 +139,20 @@ public class MainActivity extends Activity {
 	}
 
 	private void killTcpdump() {
-		RootCmd.execRootCmd("busybox killall tcpdump");
-		RootCmd.execRootCmd("busybox killall tcpdump");
+		RootCmd.execRootCmd(mBusybox + " killall tcpdump");
+		RootCmd.execRootCmd(mBusybox + " killall tcpdump");
 		log("停止所有tcpdump进程...");
 	}
 	
 	public void stopTcpdump(View v) {
-		killTcpdump();
-		
+
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 
+				killTcpdump();
+				
 				log("流量统计...");
 				traffic(true);
 
@@ -267,20 +270,21 @@ public class MainActivity extends Activity {
 	
 	private boolean installBusybox() {
 		try {
-			String file = "busybox";
-			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.busybox, file, getApplicationContext());
-			String busybox = FileUtils.getFilesDir(getApplicationContext()).toString() + "/" + file;
+			
+			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.busybox, "busybox", getApplicationContext());
+			String busybox = FileUtils.getFilesDir(getApplicationContext()).toString() + "/busybox";
+			RootCmd.execRootCmd("chmod 777 " + busybox);
 			// 重新挂载/system分区使分区可写
 			RootCmd.execRootCmd(busybox + " mount -o remount,rw /system");
 			// copy busybox 到 /system/bin/busybox
-			RootCmd.execRootCmd(busybox + " cat " + busybox + " > /system/bin/" + file);
+			RootCmd.execRootCmd(busybox + " cat " + busybox + " > " + mBusybox);
 			
-			RootCmd.execRootCmd(busybox + " chmod 777 /system/bin/" + file);
+			RootCmd.execRootCmd(busybox + " chmod 777 " + mBusybox);
 
 //			RootCmd.execRootCmd("busybox --install /system/bin");
 
 //			log("还原/system分区只读属性");
-			RootCmd.execRootCmd("busybox mount -o remount,ro /system");
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,ro /system");
 			log("安装busybox成功！");
 			
 			return true;
@@ -301,11 +305,11 @@ public class MainActivity extends Activity {
 	}
 	
 	private boolean ensureBusyboxInstalled() {
-		if (!isBusyboxExists()) {
-			return installBusybox();
-		}
+//		if (!isBusyboxExists()) {
+		return installBusybox();
+//		}
 		
-		return true;
+//		return true;
 	}
 	
 	private boolean isTcpdumpExists() {
@@ -314,11 +318,11 @@ public class MainActivity extends Activity {
 	}
 	
 	private boolean ensureTcpdumpInstalled() {
-		if (!isTcpdumpExists()) {
-			return installTcpdump();
-		}
+//		if (!isTcpdumpExists()) {
+		return installTcpdump();
+//		}
 		
-		return true;
+//		return true;
 	}
 	
 	private boolean installTcpdump() {
@@ -327,14 +331,14 @@ public class MainActivity extends Activity {
 			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.tcpdump, file, getApplicationContext());
 			String tcpdump = FileUtils.getFilesDir(getApplicationContext()).toString() + "/" + file;
 			// 重新挂载/system分区使分区可写
-			RootCmd.execRootCmd("busybox mount -o remount,rw /system");
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,rw /system");
 			// copy busybox 到 /system/bin/busybox
-			RootCmd.execRootCmd("busybox cat " + tcpdump + " > /system/bin/" + file);
+			RootCmd.execRootCmd(mBusybox + " cat " + tcpdump + " > /system/bin/" + file);
 			
-			RootCmd.execRootCmd("busybox chmod 777 /system/bin/" + file);
+			RootCmd.execRootCmd(mBusybox + " chmod 777 /system/bin/" + file);
 
 //			log("还原/system分区只读属性");
-			RootCmd.execRootCmd("busybox mount -o remount,ro /system");
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,ro /system");
 			log("安装tcpdump成功！");
 			
 			return true;
@@ -421,7 +425,7 @@ public class MainActivity extends Activity {
 	
 	private boolean ensureSocketConnected() {
 		ArrayList<String> netstat = RootCmd
-				.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
+				.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
 
 		boolean isAllConnected = true;
 		boolean bpush = false;
@@ -579,11 +583,11 @@ public class MainActivity extends Activity {
 		String dir = dateFormat.format(new Date());
 		resultPath = root + "/" + dir + "/";
 
-		RootCmd.execRootCmd("busybox mkdir -p " + resultPath);
+		RootCmd.execRootCmd(mBusybox + " mkdir -p " + resultPath);
 	}
 
 	private void clearResultPath() {
-		RootCmd.execCmd("busybox rm -rf " + resultPath);
+		RootCmd.execCmd(mBusybox + " rm -rf " + resultPath);
 	}
 
 	private void initLogPath() {
@@ -720,7 +724,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				ArrayList<String> netstat = RootCmd
-						.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
+						.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
 
 				String content = "";
 
