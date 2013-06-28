@@ -160,6 +160,8 @@ public class MainActivity extends Activity {
 				powerMonitor();
 				// stopPower();
 
+				screenCapture();
+				
 				// if (view != null) {
 				DateFormat dateFormat = new SimpleDateFormat(
 						"yyyy/MM/dd HH:mm:ss");
@@ -644,18 +646,20 @@ public class MainActivity extends Activity {
 		// logcat -d | grep 'I/PowerUsage' | awk -F ':' '{print $5}' | awk
 		// '{print $1}' | awk -F 'mAh' '{print $1}'
 
-		mHandler.postDelayed(new Runnable() {
+		final String powerPath = resultPath + "power.txt";
 
-			@Override
-			public void run() {
-				final String powerPath = resultPath + "power.txt";
-
-				RootCmd.execRootCmd("echo [-----------------开始电量统计！--------------] >> " + powerPath);
-				RootCmd.execRootCmd("date >> " + powerPath);
-				RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> "	+ powerPath);
-
-			}
-		}, 1000);
+		RootCmd.execRootCmd("echo [-----------------开始电量统计！--------------] >> " + powerPath);
+		RootCmd.execRootCmd("date >> " + powerPath);
+		RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> "	+ powerPath);
+		
+//		mHandler.postDelayed(new Runnable() {
+//
+//			@Override
+//			public void run() {
+//				
+//
+//			}
+//		}, 1000);
 
 	}
 
@@ -849,7 +853,52 @@ public class MainActivity extends Activity {
 		Intent intent = new Intent(Intent.ACTION_MAIN);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);// 注意
 		intent.addCategory(Intent.CATEGORY_HOME);
-		this.startActivity(intent);
+		startActivity(intent);
+//		screenCapture();
+		
+//		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+	}
+	
+	public void screenCapture() {
+		capturePower();
+	}
+	
+	private void capturePower() {
+		startPowerTop();
+		sleep(2);
+		screenShot(resultPath + "powertop.png");
+		
+		startPowerTabs("bdservice_v1");
+		sleep(2);
+		screenShot(resultPath + "bpush.png");
+		
+		startPowerTabs("zhangxin.push");
+		sleep(2);
+		screenShot(resultPath + "jpush.png");
+		
+		startPowerTabs("com.igexin.demo.pushservice");
+		sleep(2);
+		screenShot(resultPath + "getui.png");
+	}
+	
+	private void screenShot(String path) {
+		RootCmd.execRootCmd("screenshot " + path);
+	}
+
+	public void startPowerTop() {
+		Intent powerTop = new Intent();
+		powerTop.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTop");
+		startActivity(powerTop);
+	}
+	
+	private void startPowerTabs(String pkg) {
+		String cmd = "ps=`/system/bin/busybox ps | /system/bin/busybox awk '/%1s$/ {print $1}'|/system/bin/busybox awk '{if(NR==1)print $1}'`;uid=`/system/bin/busybox awk '/Uid/ {print $2}' /proc/$ps/status`;echo $uid;";
+		List<String> ret = RootCmd.execRootCmd(String.format(cmd, pkg));
+		Intent powerTabs = new Intent();
+		powerTabs.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTabs");
+//        powerTabs.putExtras(powerTop);
+        powerTabs.putExtra("uid", Integer.parseInt(ret.get(0)));
+        startActivity(powerTabs);
 	}
 
 }
