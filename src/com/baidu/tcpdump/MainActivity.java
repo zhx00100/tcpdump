@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
 				powerMonitor();
 				// stopPower();
 
-				screenCapture();
+//				screenCapture();
 				
 				// if (view != null) {
 				DateFormat dateFormat = new SimpleDateFormat(
@@ -184,7 +184,7 @@ public class MainActivity extends Activity {
 				String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min,
 						second);
 
-				Log.i(TAG, "停止测试！");
+//				Log.i(TAG, "停止测试！");
 				log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间："
 						+ s);
 
