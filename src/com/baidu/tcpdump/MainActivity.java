@@ -1,14 +1,13 @@
 package com.baidu.tcpdump;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
@@ -30,6 +29,7 @@ import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,6 +54,8 @@ public class MainActivity extends Activity {
 
 	public long mStartTime;
 
+	String mBusybox = "/system/bin/busybox";
+	
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -90,11 +92,13 @@ public class MainActivity extends Activity {
 		if (wl == null) {
 
 			PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-			wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK
+			wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
 					| PowerManager.ACQUIRE_CAUSES_WAKEUP
 					| PowerManager.ON_AFTER_RELEASE, "tcpdump");
 			wl.acquire();
 		}
+		
+//		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 
 	@Override
@@ -134,15 +138,21 @@ public class MainActivity extends Activity {
 		startService(service);
 	}
 
+	private void killTcpdump() {
+		RootCmd.execRootCmd(mBusybox + " killall tcpdump");
+		RootCmd.execRootCmd(mBusybox + " killall tcpdump");
+		log("停止所有tcpdump进程...");
+	}
+	
 	public void stopTcpdump(View v) {
-		final View view = v;
+
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
-				RootCmd.execRootCmd("busybox killall tcpdump");
-				log("停止所有tcpdump进程...");
 
+				killTcpdump();
+				
 				log("流量统计...");
 				traffic(true);
 
@@ -150,30 +160,36 @@ public class MainActivity extends Activity {
 				powerMonitor();
 				// stopPower();
 
-				if (view != null) {
-					DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					String stopTime = dateFormat.format(new Date());
-					long stopTimeInMils = System.currentTimeMillis();
-					
-//					Calendar c = Calendar.getInstance();
-////					c.setTimeZone(TimeZone.getTimeZone("GTM"));
-//					c.setTimeInMillis(stopTimeInMils - mStartTime);
-//					
-//					DateFormat dateFormat2 = new SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
-//					dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
-//					String testTime = dateFormat2.format(c.getTime());
-					long testTime = (stopTimeInMils - mStartTime) / 1000;
-					long hour = testTime / 3600;
-					long min = testTime % 3600 / 60;
-					long second = testTime % 60;
-					
-					String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min, second);
-					
-					Log.i(TAG, "停止测试！");
-					log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间：" + s);
+//				screenCapture();
+				
+				// if (view != null) {
+				DateFormat dateFormat = new SimpleDateFormat(
+						"yyyy/MM/dd HH:mm:ss");
+				String stopTime = dateFormat.format(new Date());
+				long stopTimeInMils = System.currentTimeMillis();
 
-					FileUtils.logToFile(mLogView.getText().toString(), logPath);
-				}
+				// Calendar c = Calendar.getInstance();
+				// // c.setTimeZone(TimeZone.getTimeZone("GTM"));
+				// c.setTimeInMillis(stopTimeInMils - mStartTime);
+				//
+				// DateFormat dateFormat2 = new
+				// SimpleDateFormat("yyyy年mm月dd天HH小时mm分ss秒");
+				// dateFormat2.setTimeZone(TimeZone.getTimeZone("GTM+00:00"));
+				// String testTime = dateFormat2.format(c.getTime());
+				long testTime = (stopTimeInMils - mStartTime) / 1000;
+				long hour = testTime / 3600;
+				long min = testTime % 3600 / 60;
+				long second = testTime % 60;
+
+				String s = String.format("%1$d时%2$02d分%3$02d秒", hour, min,
+						second);
+
+//				Log.i(TAG, "停止测试！");
+				log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间："
+						+ s);
+
+				FileUtils.logToFile(mLogView.getText().toString(), logPath);
+				// }
 
 			}
 		}).start();
@@ -194,8 +210,6 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 
-				int originCount = mLogView.getLineCount();
-
 				mLogView.append(log + "\n");
 				// mLogView.setText(mLogView.getText().toString() + log + "\n");
 				//
@@ -208,9 +222,9 @@ public class MainActivity extends Activity {
 				/**
 				 * textView不可见内容的高度，可以理解为偏移位移
 				 */
-				int maxY = (mLogView.getLineCount() * mLogView.getLineHeight()
-						+ mLogView.getPaddingTop() + mLogView
-							.getPaddingBottom()) - mLogView.getHeight();
+//				int maxY = (mLogView.getLineCount() * mLogView.getLineHeight()
+//						+ mLogView.getPaddingTop() + mLogView
+//							.getPaddingBottom()) - mLogView.getHeight();
 
 				double viewCount = Math.floor(height / lineHeight);// 可见区域最大显示多少行
 				if (lineCount > viewCount) {// 总行数大于可见区域显示的行数时则滚动
@@ -227,342 +241,361 @@ public class MainActivity extends Activity {
 		});
 	}
 
+	private boolean ensureDeviceRooted() {
+		if (Device.isRooted()) {
+			log("具有root权限的设备！");
+			return true;
+		} else {
+			log("设备没有root或者在权限管理器里被拒绝授予root了！！！\n请点击【一键root】尝试获取临时root权限或在权限管理器授予root权限...");
+			return false;
+		}
+	}
+	
+	private boolean ensureNetworkConnected() {
+		if (Network.isConnected(getApplicationContext())) {
+			String c = "网络已连接! 网络制式：" + Network.getType(getApplicationContext());
+			log(c);
+			return true;
+		} else {
+			log("网络未连接, 请联网后测试!");
+			
+			// 打开网络设置activity
+			Intent intent = new Intent("android.settings.WIRELESS_SETTINGS");
+//			ComponentName cm = new ComponentName("com.android.phone", "com.android.phone.Settings");
+//			intent.setComponent(cm);
+			// intent.setAction("android.intent.action.VIEW");
+			startActivity(intent);
+
+			return false;
+		}
+	}
+	
+	private boolean installBusybox() {
+		try {
+			
+			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.busybox, "busybox", getApplicationContext());
+			String busybox = FileUtils.getFilesDir(getApplicationContext()).toString() + "/busybox";
+			RootCmd.execRootCmd("chmod 777 " + busybox);
+			// 重新挂载/system分区使分区可写
+			RootCmd.execRootCmd(busybox + " mount -o remount,rw /system");
+			// copy busybox 到 /system/bin/busybox
+			RootCmd.execRootCmd(busybox + " cat " + busybox + " > " + mBusybox);
+			
+			RootCmd.execRootCmd(busybox + " chmod 777 " + mBusybox);
+
+//			RootCmd.execRootCmd("busybox --install /system/bin");
+
+//			log("还原/system分区只读属性");
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,ro /system");
+			log("安装busybox成功！");
+			
+			return true;
+		} catch (Exception e) {
+			Log.e(TAG, Log.getStackTraceString(e));
+			log("安装busybox失败！");
+			return false;
+		}
+	}
+	
+	/**
+	 * busybox 路径： /data/data/com.baidu.tcpdump/files/busybox
+	 * @return
+	 */
+	private boolean isBusyboxExists() {
+		File busybox = new File(FileUtils.getFilesDir(getApplicationContext()), "busybox");
+		return busybox.exists();
+	}
+	
+	private boolean ensureBusyboxInstalled() {
+//		if (!isBusyboxExists()) {
+		return installBusybox();
+//		}
+		
+//		return true;
+	}
+	
+	private boolean isTcpdumpExists() {
+		File busybox = new File(FileUtils.getFilesDir(getApplicationContext()), "tcpdump");
+		return busybox.exists();
+	}
+	
+	private boolean ensureTcpdumpInstalled() {
+//		if (!isTcpdumpExists()) {
+		return installTcpdump();
+//		}
+		
+//		return true;
+	}
+	
+	private boolean installTcpdump() {
+		try {
+			String file = "tcpdump";
+			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.tcpdump, file, getApplicationContext());
+			String tcpdump = FileUtils.getFilesDir(getApplicationContext()).toString() + "/" + file;
+			// 重新挂载/system分区使分区可写
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,rw /system");
+			// copy busybox 到 /system/bin/busybox
+			RootCmd.execRootCmd(mBusybox + " cat " + tcpdump + " > /system/bin/" + file);
+			
+			RootCmd.execRootCmd(mBusybox + " chmod 777 /system/bin/" + file);
+
+//			log("还原/system分区只读属性");
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,ro /system");
+			log("安装tcpdump成功！");
+			
+			return true;
+		} catch (Exception e) {
+			Log.e(TAG, Log.getStackTraceString(e));
+			log("安装tcpdump失败！无法测试");
+			return false;
+		}
+	}
+	
+	private void uninstallAllApks() {
+		log("卸载所有JPush、个推、baidupush应用...");
+		ArrayList<String> pushes = PushUtility
+				.getAllPackagesUsingPush(getApplicationContext());
+		ArrayList<String> jpushes = PushUtility
+				.getAllPackagesUsingJPush(getApplicationContext());
+		ArrayList<String> getuies = PushUtility
+				.getAllPackagesUsingGetui(getApplicationContext());
+
+		ArrayList<String> all = new ArrayList<String>();
+		all.addAll(pushes);
+		all.addAll(jpushes);
+		all.addAll(getuies);
+
+		for (String apk : all) {
+			RootCmd.execRootCmd("pm uninstall " + apk);
+		}
+		log("卸载完成!");
+		
+	}
+	
+	private void installAllApks() {
+		log("开始安装JPush、个推、baidupush...");
+		String[] apkToInstall = { "JPush.apk", "GexinSdkDemoActivity.apk",
+				"PushDemo.apk" };
+		// ArrayList<InputStream> apkPath = new ArrayList<InputStream>();
+		String dstParent = "/sdcard/zhangxin/apk/";
+
+		AssetManager assetMgr = getAssets();
+		for (String apk : apkToInstall) {
+			try {
+				FileUtils.copyFile(assetMgr.open(apk), dstParent + apk);
+			} catch (IOException e) {
+				Log.e(TAG, Log.getStackTraceString(e));
+			}
+		}
+
+		// 2.2.2安装
+		for (String apk : apkToInstall) {
+			RootCmd.execRootCmd("pm install " + dstParent + apk);
+		}
+		log("安装完成!");
+	}
+	
+	private void getDeviceInfo() {
+		RootCmd.execRootCmd("getprop > " + resultPath + "device_info.txt");
+		String c = "Network type: " + Network.getType(getApplicationContext());
+		RootCmd.execRootCmd("echo >> " + resultPath + "device_info.txt");
+		RootCmd.execRootCmd("echo " + c + " >> " + resultPath + "device_info.txt");
+	}
+	
+	private void launchAllApps() {
+		List<String> res = null;
+		// 启动 个推
+		log("开始启动个推...");
+		res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
+
+		sleep(20);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+
+		// 启动 百度
+		log("开始启动baidupush demo...");
+		RootCmd.execRootCmd("am start -n com.baidu.push.example/com.baidu.push.example.PushDemoActivity");
+		sleep(10);
+
+		// 启动 jpush
+		log("开始启动jpush...");
+		RootCmd.execRootCmd("am start -n zhangxin.push/com.example.jpushdemo.MainActivity");
+		sleep(5);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+	}
+	
+	private boolean ensureSocketConnected() {
+		ArrayList<String> netstat = RootCmd
+				.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
+
+		boolean isAllConnected = true;
+		boolean bpush = false;
+		boolean jpush = false;
+		boolean getui = false;
+
+		int bpushConnectCount = 0;
+		int jpushConnectCount = 0;
+		int getuiConnectCount = 0;
+
+		if (netstat.isEmpty()) {
+			log("错误！长连接均未建立！！！");
+			isAllConnected = false;
+		} else {
+
+			for (String item : netstat) {
+				if (item.contains(":5287")) {
+					if (item.contains("ESTABLISHED")) {
+						bpush = true;
+						bpushConnectCount++;
+					}
+				}
+
+				if (item.contains(":3000")) {
+					if (item.contains("ESTABLISHED")) {
+						jpush = true;
+						jpushConnectCount++;
+					}
+				}
+
+				if (item.contains(":5224") || item.contains(":5225")) {
+					if (item.contains("ESTABLISHED")) {
+						getui = true;
+						getuiConnectCount++;
+					}
+				}
+			}
+
+			if (bpush) {
+				log("baidupush长连接建立成功！连接数 = " + bpushConnectCount);
+			} else {
+				log("错误！baidupush长连接未建立！");
+			}
+
+			if (jpush) {
+				log("jpush长连接建立成功！连接数 = " + jpushConnectCount);
+			} else {
+				log("错误！jpush长连接未建立！");
+			}
+
+			if (getui) {
+				log("个推长连接建立成功！连接数 = " + getuiConnectCount);
+			} else {
+				log("错误！个推长连接未建立！");
+			}
+
+			isAllConnected = bpush && jpush && getui;
+		}
+
+		if (!isAllConnected) {
+			log("有未建立长连接的应用！\n请根据提示或者【查询长连接】打开对应应用重新绑定！\n确保长连接都存在， 然后点击【统计流量、电量】");
+			return false;
+		}
+
+		if (bpushConnectCount == 1 && jpushConnectCount == 1
+				&& getuiConnectCount == 1) {
+
+		} else {
+			log("长连接数目不正确, 这可能是bug！\n请点击重运行【一键测试】！\n确保长连接都==1!");
+			clearResultPath();
+			return false;
+		}
+		
+		return true;
+	}
+	
 	private class Run implements Runnable {
 		public void run() {
 
-			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-			String startTime = dateFormat.format(new Date());
+			// 打印并记录测试开始时间
 			mStartTime = System.currentTimeMillis();
+			log("开始测试!!!\n开始时间：" + getDate());
+						
+			// 第1步：检查设备是否具有root权限， 要有su文件
+			if (!ensureDeviceRooted()) {
+				return;
+			}
+
+			// 第2步：检查网络是否可用
+			if (!ensureNetworkConnected()) {
+				return;
+			}
 			
-			log("开始测试!!!\n开始时间：" + startTime);
-
-			// check root permission
-			if (Device.isRooted()) {
-				log("具有root权限的设备！");
-			} else {
-				log("设备没有root或者在权限管理器里被拒绝授予root了！！！\n请点击【一键root】尝试获取临时root权限或在权限管理器授予root权限...");
-				// log("获取成功后， 请重新运行【一键测试】");
-				// log("root过程约持续60秒！");
-				// runOnUiThread(new Runnable() {
-				// public void run() {
-				// root(null);
-				// }
-				// });
-
+			// 第3步：覆盖安装busybox 从 res/raw/busybox文件 到 /data/data/com.baidu.tcpdump/files/busybox -> /system/bin/busybox
+			if (!ensureBusyboxInstalled()) {
 				return;
 			}
-
-			// 检查网络是否可用
-			if (Network.isConnected(getApplicationContext())) {
-				log("网络已连接!");
-				String c = "网络制式："
-						+ Network.getNetworkType(Network
-								.checkNetworkType(getApplicationContext()));
-				log(c);
-				// RootCmd.execRootCmd("echo " + c + " >> ")
-			} else {
-				log("网络未连接, 请联网后测试!");
-				Intent intent = new Intent(/* "android.settings.WIRELESS_SETTINGS" */);
-				ComponentName cm = new ComponentName("com.android.phone",
-						"com.android.phone.Settings");
-				intent.setComponent(cm);
-				// intent.setAction("android.intent.action.VIEW");
-				startActivity(intent);
-
+			
+			// 第4步：覆盖安装tcpdump 从 res/raw/tcpdump文件 到 /data/data/com.baidu.tcpdump/files/tcpdump -> /system/bin/tcpdump
+			if (!ensureTcpdumpInstalled()) {
 				return;
 			}
+			
+			// 第5步：kill all tcpdump processes
+			killTcpdump();
+			log("kill all processes of tcpdump");
 
-			AssetManager assetMgr = getAssets();
-
-			ArrayList<String> b = RootCmd.execRootCmd("busybox");
-			if (!b.isEmpty() // 存在busybox， 则不安装
-					&& b.size() > 0 && b.get(0).contains("BusyBox")) {
-
-				log("设备中有busybox！");
-				log(b.get(0));
-			} else {
-				log("安装busybox...");
-
-				try {
-					String path = "/sdcard/zhangxin/busybox/busybox";
-					FileUtils.copyFile(assetMgr.open("busybox"), path);
-
-					// remount /system
-					// "mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system"
-					log("重新挂载/system分区，使可写");
-					RootCmd.execRootCmd("mount -o remount,rw /system");
-
-					// cp busybox /system/bin
-					RootCmd.execRootCmd("cat " + path + " > "
-							+ "/system/bin/busybox");
-					RootCmd.execRootCmd("chmod 777 /system/bin/busybox");
-
-					RootCmd.execRootCmd("busybox --install /system/bin");
-
-					log("还原/system分区只读属性");
-					RootCmd.execRootCmd("mount -o remount,ro /system");
-					log("安装busybox成功！");
-				} catch (IOException e1) {
-
-					e1.printStackTrace();
-				}
-			}
-
-			// 1.第一步：安装tcpdump
-			ArrayList<String> r = RootCmd.execRootCmd("ls /data/local/tcpdump");
-			if (r.isEmpty()) {
-				// 0.清除tcpdump
-				log("kill all processes of tcpdump");
-				stopTcpdump(null);
-
-				log("开始安装tcpdump...");
-
-				InputStream is = null;
-				try {
-					is = assetMgr.open("tcpdump");
-				} catch (IOException e) {
-					Log.e(TAG, Log.getStackTraceString(e));
-				}
-
-				if (is != null) {
-					// 1.1.拷贝到sdcard里
-					String dstPath = "/sdcard/zhangxin/tcpdump/tcpdump";
-					FileUtils.copyFile(is, dstPath);
-
-					// 1.2.root权限copy到/data/local下, 使用cat命令, 防止有些手机没有cp命令
-					RootCmd.execRootCmd("cat " + dstPath + " > "
-							+ "/data/local/tcpdump");
-					RootCmd.execRootCmd("chmod 777 /data/local/tcpdump");
-					log("安装tcpdump成功！");
-				} else {
-					Log.e(TAG, "testSuit: copy file failed!");
-
-					log("安装tcpdump失败！无法测试");
-					return;
-				}
-			} else {
-
-			}
-
-			// 删除2个目录
+			// 第6步：删除2个目录
+			removeCacheDirs();
 			log("删除/sdcard/zhangxin/apk & traffic目录");
-			RootCmd.execRootCmd("busybox rm -rf /sdcard/zhangxin/apk");
-			RootCmd.execRootCmd("busybox rm -rf /sdcard/zhangxin/traffic");
 
-			// 2.安装 JPush、个推、BPush（5分钟和10分钟2个版本）， 共4个版本
+			// 第7步：安装 JPush、个推、BPush（5分钟和10分钟2个版本）， 共4个版本
+			// 1.卸载所有竞品
+			uninstallAllApks();
 
-			// 2.1先卸载所有
-			log("开始卸载所有JPush、个推、baidupush应用...");
-			ArrayList<String> pushes = PushUtility
-					.getAllPackagesUsingPush(getApplicationContext());
-			ArrayList<String> jpushes = PushUtility
-					.getAllPackagesUsingJPush(getApplicationContext());
-			ArrayList<String> getuies = PushUtility
-					.getAllPackagesUsingGetui(getApplicationContext());
+			// 2.安装所有竞品
+			installAllApks();
 
-			ArrayList<String> all = new ArrayList<String>();
-			all.addAll(pushes);
-			all.addAll(jpushes);
-			all.addAll(getuies);
-
-			for (String apk : all) {
-				RootCmd.execRootCmd("pm uninstall " + apk);
-			}
-
-			log("卸载完成!");
-
-			// 2.2.1copy apks to sdcard
-			log("开始安装JPush、个推、baidupush...");
-			String[] apkToInstall = { "JPush.apk", "GexinSdkDemoActivity.apk",
-					"PushDemo.apk" };
-			// ArrayList<InputStream> apkPath = new ArrayList<InputStream>();
-			String dstParent = "/sdcard/zhangxin/apk/";
-
-			for (String apk : apkToInstall) {
-				try {
-					FileUtils.copyFile(assetMgr.open(apk), dstParent + apk);
-				} catch (IOException e) {
-					Log.e(TAG, Log.getStackTraceString(e));
-				}
-			}
-
-			// 2.2.2安装
-			for (String apk : apkToInstall) {
-				RootCmd.execRootCmd("pm install " + dstParent + apk);
-			}
-
-			log("安装完成!");
-
-			// 创建结果收集目录
+			// 第8步：创建结果收集目录
 			initResultPath();
 			log("创建结果收集目录：" + resultPath);
 			initLogPath();
 			log("创建log.txt，收集打印日志");
 
-			// 收集设备信息
-			RootCmd.execRootCmd("getprop > " + resultPath + "device_info.txt");
-			String c = "Network type: "
-					+ Network.getNetworkType(Network
-							.checkNetworkType(getApplicationContext()));
-			RootCmd.execRootCmd("echo >> " + resultPath + "device_info.txt");
-			RootCmd.execRootCmd("echo " + c + " >> " + resultPath
-					+ "device_info.txt");
-			// dump
+			// 第9步：收集设备信息
+			getDeviceInfo();
+			
+			// 第10步：dump
 			log("启动tcpdump...");
 			tcpdump(null);
 
-			// 2.3启动
+			// 第11步：启动所有竞品
+			launchAllApps();
 
-			List<String> res = null;
-			// 启动 个推
-			log("开始启动个推...");
-			res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
-			
-			sleep(20);
-			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
-
-			// 启动 百度
-			log("开始启动baidupush demo...");
-			RootCmd.execRootCmd("am start -n com.baidu.push.example/com.baidu.push.example.PushDemoActivity");
-			sleep(10);
-
-			// 启动 jpush
-			log("开始启动jpush...");
-			RootCmd.execRootCmd("am start -n zhangxin.push/com.example.jpushdemo.MainActivity");
-			sleep(5);
-			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
-			// Intent intent = new Intent(Intent.ACTION_MAIN);
-			// intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);// 注意
-			// intent.addCategory(Intent.CATEGORY_HOME);
-			// startActivity(intent);
-
-			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
-
-			// close AssetManager
-			// assetMgr.close();
-
-			// 检查socket是否存在
+			// 第12步：确保竞品长连接存在且连接数 == 1
 			log("等待建立长连接");
 			sleep(10);
-			ArrayList<String> netstat = RootCmd
-					.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
-
-			boolean isAllConnected = true;
-			boolean bpush = false;
-			boolean jpush = false;
-			boolean getui = false;
-
-			int bpushConnectCount = 0;
-			int jpushConnectCount = 0;
-			int getuiConnectCount = 0;
-
-			if (netstat.isEmpty()) {
-				log("错误！长连接均未建立！！！");
-				isAllConnected = false;
-			} else {
-
-				for (String item : netstat) {
-					if (item.contains(":5287")) {
-						if (item.contains("ESTABLISHED")) {
-							bpush = true;
-							bpushConnectCount++;
-						}
-					}
-
-					if (item.contains(":3000")) {
-						if (item.contains("ESTABLISHED")) {
-							jpush = true;
-							jpushConnectCount++;
-						}
-					}
-
-					if (item.contains(":5224") || item.contains(":5225")) {
-						if (item.contains("ESTABLISHED")) {
-							getui = true;
-							getuiConnectCount++;
-						}
-					}
-				}
-
-				if (bpush) {
-					log("baidupush长连接建立成功！连接数 = " + bpushConnectCount);
-				} else {
-					log("错误！baidupush长连接未建立！");
-				}
-
-				if (jpush) {
-					log("jpush长连接建立成功！连接数 = " + jpushConnectCount);
-				} else {
-					log("错误！jpush长连接未建立！");
-				}
-
-				if (getui) {
-					log("个推长连接建立成功！连接数 = " + getuiConnectCount);
-				} else {
-					log("错误！个推长连接未建立！");
-				}
-
-				isAllConnected = bpush && jpush && getui;
-			}
-
-			if (!isAllConnected) {
-				log("有未建立长连接的应用！\n请根据提示或者【查询长连接】打开对应应用重新绑定！\n确保长连接都存在， 然后点击【统计流量、电量】");
+			if (!ensureSocketConnected()) {
 				return;
 			}
 
-			if (bpushConnectCount == 1
-					&& jpushConnectCount == 1
-					&& getuiConnectCount == 1) {
-
-			} else {
-				log("长连接数目不正确, 这可能是bug！\n请点击重运行【一键测试】！\n确保长连接都==1!");
-				clearResultPath();
-				return;
-			}
-
+			// 第13步：开始统计流量&电量
 			trafficAndPower(null);
-			// busybox netstat -anpt | egrep "5287|3000|5224|5225"
-			// //（5287百度、3000Jpush、5224 5225个推）
-
-			// back
-			// SystemKey.back(getApplicationContext());
-
-			// Intent intent = new Intent();
-			// intent.setClass(this, MainActivity.class);
-			// startActivity(intent);
-
-			// RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
-
-			// RootCmd.execRootCmd("am instrument -w -e class com.baidu.tcpdump.test.NotepadActivityTest#testBack com.baidu.tcpdump.test/android.test.InstrumentationTestRunner");
-
-			// 2.5返回home
-			// Intent intent = new Intent(Intent.ACTION_MAIN);
-			// intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);// 注意
-			// intent.addCategory(Intent.CATEGORY_HOME);
-			// this.startActivity(intent);
-
-			// Intent jpush = new Intent();
-			// jpush.setClassName(this, "com.example.jpushdemo.MainActivity");
-			// startActivity(jpush);
-		}
-
-		private void initResultPath() {
-			DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
-			String dir = dateFormat.format(new Date());
-			resultPath = root + "/" + dir + "/";
-
-			RootCmd.execRootCmd("busybox mkdir -p " + resultPath);
-		}
-
-		private void clearResultPath() {
-			RootCmd.execCmd("busybox rm -rf " + resultPath);
-		}
-
-		private void initLogPath() {
-			logPath = resultPath + "log.txt";
 		}
 	}
+	
+	private String getDate() {
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		String startTime = dateFormat.format(new Date());
+		return startTime;
+	}
 
+	private void initResultPath() {
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
+		String dir = dateFormat.format(new Date());
+		resultPath = root + "/" + dir + "/";
+
+		RootCmd.execRootCmd(mBusybox + " mkdir -p " + resultPath);
+	}
+
+	private void clearResultPath() {
+		RootCmd.execCmd(mBusybox + " rm -rf " + resultPath);
+	}
+
+	private void initLogPath() {
+		logPath = resultPath + "log.txt";
+	}
+	
 	private void power() {
 		// 处于睡眠态
 		// KeyguardManager kgMgr = (KeyguardManager)
@@ -583,7 +616,11 @@ public class MainActivity extends Activity {
 		RootCmd.execRootCmd("pm install -r " + path);
 
 		powerMonitor();
+	}
 
+	private void removeCacheDirs() {
+		RootCmd.execRootCmd("busybox rm -rf /sdcard/zhangxin/apk");
+		RootCmd.execRootCmd("busybox rm -rf /sdcard/zhangxin/traffic");
 	}
 
 	private void stopPower() {
@@ -609,18 +646,20 @@ public class MainActivity extends Activity {
 		// logcat -d | grep 'I/PowerUsage' | awk -F ':' '{print $5}' | awk
 		// '{print $1}' | awk -F 'mAh' '{print $1}'
 
-		mHandler.postDelayed(new Runnable() {
+		final String powerPath = resultPath + "power.txt";
 
-			@Override
-			public void run() {
-				final String powerPath = resultPath + "power.txt";
-
-				RootCmd.execRootCmd("date >> " + powerPath);
-				RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> "
-						+ powerPath);
-
-			}
-		}, 1000);
+		RootCmd.execRootCmd("echo [-----------------开始电量统计！--------------] >> " + powerPath);
+		RootCmd.execRootCmd("date >> " + powerPath);
+		RootCmd.execRootCmd("logcat -d -v time -s PowerUsage:I >> "	+ powerPath);
+		
+//		mHandler.postDelayed(new Runnable() {
+//
+//			@Override
+//			public void run() {
+//				
+//
+//			}
+//		}, 1000);
 
 	}
 
@@ -689,7 +728,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				ArrayList<String> netstat = RootCmd
-						.execRootCmd("busybox netstat -anpt | busybox awk '/5287|5224|5225|3000/'");
+						.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
 
 				String content = "";
 
@@ -770,13 +809,14 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void run() {
-//				mLogView.setText("");
-				DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				// mLogView.setText("");
+				DateFormat dateFormat = new SimpleDateFormat(
+						"yyyy/MM/dd HH:mm:ss");
 				String startTime = dateFormat.format(new Date());
 				mStartTime = System.currentTimeMillis();
-				
+
 				log("开始流量、电量统计!!!\n开始时间：" + startTime);
-				
+
 				// 流量统计
 				List<String> t = RootCmd
 						.execRootCmd("ls /proc/net/xt_qtaguid/stats");
@@ -813,7 +853,52 @@ public class MainActivity extends Activity {
 		Intent intent = new Intent(Intent.ACTION_MAIN);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);// 注意
 		intent.addCategory(Intent.CATEGORY_HOME);
-		this.startActivity(intent);
+		startActivity(intent);
+//		screenCapture();
+		
+//		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+	}
+	
+	public void screenCapture() {
+		capturePower();
+	}
+	
+	private void capturePower() {
+		startPowerTop();
+		sleep(2);
+		screenShot(resultPath + "powertop.png");
+		
+		startPowerTabs("bdservice_v1");
+		sleep(2);
+		screenShot(resultPath + "bpush.png");
+		
+		startPowerTabs("zhangxin.push");
+		sleep(2);
+		screenShot(resultPath + "jpush.png");
+		
+		startPowerTabs("com.igexin.demo.pushservice");
+		sleep(2);
+		screenShot(resultPath + "getui.png");
+	}
+	
+	private void screenShot(String path) {
+		RootCmd.execRootCmd("screenshot " + path);
+	}
+
+	public void startPowerTop() {
+		Intent powerTop = new Intent();
+		powerTop.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTop");
+		startActivity(powerTop);
+	}
+	
+	private void startPowerTabs(String pkg) {
+		String cmd = "ps=`/system/bin/busybox ps | /system/bin/busybox awk '/%1s$/ {print $1}'|/system/bin/busybox awk '{if(NR==1)print $1}'`;uid=`/system/bin/busybox awk '/Uid/ {print $2}' /proc/$ps/status`;echo $uid;";
+		List<String> ret = RootCmd.execRootCmd(String.format(cmd, pkg));
+		Intent powerTabs = new Intent();
+		powerTabs.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTabs");
+//        powerTabs.putExtras(powerTop);
+        powerTabs.putExtra("uid", Integer.parseInt(ret.get(0)));
+        startActivity(powerTabs);
 	}
 
 }
