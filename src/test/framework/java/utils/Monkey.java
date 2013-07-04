@@ -10,12 +10,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 
+import test.framework.java.utils.LinearInterpolator.Point;
 import android.util.Log;
+import android.view.KeyEvent;
 
 public class Monkey {
 
@@ -27,7 +27,13 @@ public class Monkey {
     
     private int monkeyPort = 12345;
     
-    public void start() {
+    public Monkey() {}
+    
+    public interface OnMonkeyListener {
+        public void OnStarted(boolean success);
+    }
+    
+    public void start(final OnMonkeyListener onMonkeyListener) {
         new Thread(new Runnable() {
             
             @Override
@@ -35,8 +41,8 @@ public class Monkey {
                 // TODO Auto-generated method stub
                 boolean success = false;
                 
-                killAll();
-                startMonkeyServer();
+//                killAll();
+//                startMonkeyServer();
                 
                 try {
                     Thread.sleep(2000);
@@ -62,6 +68,10 @@ public class Monkey {
                 if (!success) {
                     close();
                 }
+                
+                if (onMonkeyListener != null) {
+                    onMonkeyListener.OnStarted(success);
+                }
             }
         }).start();
         
@@ -76,7 +86,7 @@ public class Monkey {
         }
     }
     
-    public void killAll() {
+    private void killAll() {
         RootCmd.execRootCmd("busybox killall com.android.commands.monkey");
         RootCmd.execRootCmd("busybox killall com.android.commands.monkey");
     }
@@ -88,7 +98,7 @@ public class Monkey {
                 mSocketClient = null;
             }
         } catch (IOException e) {
-//            LOG.log(Level.SEVERE, "Unable to close monkeySocket", e);
+            Log.e(TAG, "Unable to close monkeySocket" + Log.getStackTraceString(e));
         }
         try {
             if (monkeyReader != null) {
@@ -96,7 +106,7 @@ public class Monkey {
                 monkeyReader = null;
             }
         } catch (IOException e) {
-//            LOG.log(Level.SEVERE, "Unable to close monkeyReader", e);
+            Log.e(TAG, "Unable to close monkeyReader" + Log.getStackTraceString(e));
         }
         try {
             if (monkeyWriter != null) {
@@ -104,8 +114,10 @@ public class Monkey {
                 monkeyWriter = null;
             }
         } catch (IOException e) {
-//            LOG.log(Level.SEVERE, "Unable to close monkeyWriter", e);
+            Log.e(TAG, "Unable to close monkeyWriter" + Log.getStackTraceString(e));
         }
+        
+        killAll();
     }
 
 //    /**
@@ -185,7 +197,7 @@ public class Monkey {
 
     /**
      * Press a physical button on the device.
-     *
+     * See also {@link KeyEvent}
      * @param name the name of the button (As specified in the protocol)
      * @return success or not
      * @throws IOException on error communicating with the device
@@ -488,5 +500,51 @@ public class Monkey {
         public String getKeyName() {
             return keyName;
         }
+    }
+    
+//    @Override
+    public void drag(int startx, int starty, int endx, int endy, int steps, long ms) {
+        final long iterationTime = ms / steps;
+
+        LinearInterpolator lerp = new LinearInterpolator(steps);
+        LinearInterpolator.Point start = new LinearInterpolator.Point(startx, starty);
+        LinearInterpolator.Point end = new LinearInterpolator.Point(endx, endy);
+        lerp.interpolate(start, end, new LinearInterpolator.Callback() {
+            public void step(Point point) {
+                try {
+                    Monkey.this.touchMove(point.getX(), point.getY());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    Thread.sleep(iterationTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            public void start(Point point) {
+                try {
+                    Monkey.this.touchDown(point.getX(), point.getY());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    Thread.sleep(iterationTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            public void end(Point point) {
+                try {
+                    Monkey.this.touchUp(point.getX(), point.getY());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 }
