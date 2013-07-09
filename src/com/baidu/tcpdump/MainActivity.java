@@ -75,6 +75,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		outState.putString("log", mLogView.getText().toString());
+		outState.putLong("starttime", mStartTime);
 		super.onSaveInstanceState(outState);
 	}
 
@@ -86,8 +87,10 @@ public class MainActivity extends Activity {
 		mLogView = (TextView) findViewById(R.id.log);
 		mLogView.setMovementMethod(ScrollingMovementMethod.getInstance());
 
-		if (savedInstanceState != null)
+		if (savedInstanceState != null) {
 			mLogView.setText(savedInstanceState.getString("log"));
+			mStartTime = savedInstanceState.getLong("starttime", 0);
+		}
 
 		if (wl == null) {
 
@@ -186,8 +189,9 @@ public class MainActivity extends Activity {
 
 //				Log.i(TAG, "停止测试！");
 				log("停止测试, 并写入logfile文件！！！\n停止测试时间：" + stopTime + "\n测试持续时间："
-						+ s);
+						+ s + "(start: " + mStartTime + ", stop: " + stopTimeInMils + ")");
 
+				sleep(1);
 				FileUtils.logToFile(mLogView.getText().toString(), logPath);
 				// }
 
@@ -353,6 +357,8 @@ public class MainActivity extends Activity {
 	
 	private void uninstallAllApks() {
 		log("卸载所有JPush、个推、baidupush应用...");
+		//baidu hi
+		log("卸载百度hi");
 		ArrayList<String> pushes = PushUtility
 				.getAllPackagesUsingPush(getApplicationContext());
 		ArrayList<String> jpushes = PushUtility
@@ -365,17 +371,21 @@ public class MainActivity extends Activity {
 		all.addAll(jpushes);
 		all.addAll(getuies);
 
+		//baidu hi
+		all.add("com.baidu.hi");
+		
 		for (String apk : all) {
 			RootCmd.execRootCmd("pm uninstall " + apk);
 		}
+		
 		log("卸载完成!");
 		
 	}
 	
 	private void installAllApks() {
-		log("开始安装JPush、个推、baidupush...");
+		log("开始安装baiduhi、JPush、个推、baidupush...");
 		String[] apkToInstall = { "JPush.apk", "GexinSdkDemoActivity.apk",
-				"PushDemo.apk" };
+				"PushDemo.apk", "BaiduHi.apk" };
 		// ArrayList<InputStream> apkPath = new ArrayList<InputStream>();
 		String dstParent = "/sdcard/zhangxin/apk/";
 
@@ -407,7 +417,6 @@ public class MainActivity extends Activity {
 		// 启动 个推
 		log("开始启动个推...");
 		res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
-
 		sleep(20);
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
@@ -415,11 +424,18 @@ public class MainActivity extends Activity {
 		log("开始启动baidupush demo...");
 		RootCmd.execRootCmd("am start -n com.baidu.push.example/com.baidu.push.example.PushDemoActivity");
 		sleep(10);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
 		// 启动 jpush
 		log("开始启动jpush...");
 		RootCmd.execRootCmd("am start -n zhangxin.push/com.example.jpushdemo.MainActivity");
 		sleep(5);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+		
+		// 启动 baidu hi
+		log("开始启动BaiduHi...");
+		RootCmd.execRootCmd("am start -n com.baidu.hi/.activities.Logo");
+		sleep(3);
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
@@ -427,16 +443,18 @@ public class MainActivity extends Activity {
 	
 	private boolean ensureSocketConnected() {
 		ArrayList<String> netstat = RootCmd
-				.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
+				.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000|1863/'");
 
 		boolean isAllConnected = true;
 		boolean bpush = false;
 		boolean jpush = false;
 		boolean getui = false;
+		boolean baiduhi = false;
 
 		int bpushConnectCount = 0;
 		int jpushConnectCount = 0;
 		int getuiConnectCount = 0;
+		int baiduhiConnectCount = 0;
 
 		if (netstat.isEmpty()) {
 			log("错误！长连接均未建立！！！");
@@ -464,6 +482,13 @@ public class MainActivity extends Activity {
 						getuiConnectCount++;
 					}
 				}
+				
+				if (item.contains(":1863")) {
+					if (item.contains("ESTABLISHED")) {
+						baiduhi = true;
+						baiduhiConnectCount++;
+					}
+				}
 			}
 
 			if (bpush) {
@@ -484,7 +509,13 @@ public class MainActivity extends Activity {
 				log("错误！个推长连接未建立！");
 			}
 
-			isAllConnected = bpush && jpush && getui;
+			if (baiduhi) {
+				log("baiduhi长连接建立成功！连接数 = " + baiduhiConnectCount);
+			} else {
+				log("错误！BaiduHi长连接未建立！");
+			}
+			
+			isAllConnected = bpush && jpush && getui && baiduhi;
 		}
 
 		if (!isAllConnected) {
@@ -493,7 +524,7 @@ public class MainActivity extends Activity {
 		}
 
 		if (bpushConnectCount == 1 && jpushConnectCount == 1
-				&& getuiConnectCount == 1) {
+				&& getuiConnectCount == 1 && baiduhiConnectCount == 1) {
 
 		} else {
 			log("长连接数目不正确, 这可能是bug！\n请点击重运行【一键测试】！\n确保长连接都==1!");
@@ -564,7 +595,7 @@ public class MainActivity extends Activity {
 
 			// 第12步：确保竞品长连接存在且连接数 == 1
 			log("等待建立长连接");
-			sleep(10);
+//			sleep(10);
 			if (!ensureSocketConnected()) {
 				return;
 			}
@@ -594,6 +625,7 @@ public class MainActivity extends Activity {
 
 	private void initLogPath() {
 		logPath = resultPath + "log.txt";
+//		RootCmd.execRootCmd(mBusybox + " mkdir -p " + resultPath);
 	}
 	
 	private void power() {
@@ -728,13 +760,14 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				ArrayList<String> netstat = RootCmd
-						.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
+						.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000|1863/'");
 
 				String content = "";
 
 				int bpushConnectCount = 0;
 				int jpushConnectCount = 0;
 				int getuiConnectCount = 0;
+				int baiduhiConnectCount = 0;
 
 				if (netstat.isEmpty()) {
 					content = "错误！长连接均未建立！！！";
@@ -742,7 +775,8 @@ public class MainActivity extends Activity {
 					boolean bpush = false;
 					boolean jpush = false;
 					boolean getui = false;
-
+					boolean baiduhi = false;
+					
 					for (String item : netstat) {
 						if (item.contains(":5287")) {
 							if (item.contains("ESTABLISHED")) {
@@ -762,6 +796,13 @@ public class MainActivity extends Activity {
 							if (item.contains("ESTABLISHED")) {
 								getui = true;
 								getuiConnectCount++;
+							}
+						}
+						
+						if (item.contains(":1863")) {
+							if (item.contains("ESTABLISHED")) {
+								baiduhi = true;
+								baiduhiConnectCount++;
 							}
 						}
 					}
@@ -785,6 +826,13 @@ public class MainActivity extends Activity {
 								+ "\n";
 					} else {
 						content += "错误！个推长连接未建立！" + "\n";
+					}
+					
+					if (baiduhi) {
+						content += "baiduhi长连接已建立成功！连接数 = " + baiduhiConnectCount
+								+ "\n";
+					} else {
+						content += "baiduhi！个推长连接未建立！" + "\n";
 					}
 				}
 
