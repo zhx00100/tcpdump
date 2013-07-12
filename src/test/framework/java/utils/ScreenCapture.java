@@ -1,6 +1,6 @@
 package test.framework.java.utils;
 
-public class Screen {
+public class ScreenCapture {
 
 	public static void takeShot(String path) {
 		RootCmd.execRootCmd("screenshot " + path);
