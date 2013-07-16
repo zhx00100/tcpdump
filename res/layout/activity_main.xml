@@ -71,7 +71,7 @@
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button4"
         android:onClick="update"
-        android:text="版本更新" />
+        android:text="for test" />
     
     <TextView
         android:id="@+id/log"
