@@ -1,26 +1,36 @@
 package com.baidu.tcpdump;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.android.hierarchyviewerlib.device.ViewNode;
+
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
+import test.framework.java.utils.HierarchyViewer;
+import test.framework.java.utils.Monkey;
 import test.framework.java.utils.Network;
 import test.framework.java.utils.PushUtility;
 import test.framework.java.utils.RootCmd;
+import test.framework.java.utils.ViewServer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -29,7 +39,6 @@ import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -886,11 +895,107 @@ public class MainActivity extends Activity {
 	}
 
 	public void update(View v) {
-		Intent intent = new Intent();
-		intent.setAction("android.intent.action.VIEW");
-		Uri content_url = Uri.parse(SHARED_URL);
-		intent.setData(content_url);
-		startActivity(intent);
+//		Intent intent = new Intent();
+//		intent.setAction("android.intent.action.VIEW");
+//		Uri content_url = Uri.parse(SHARED_URL);
+//		intent.setData(content_url);
+//		startActivity(intent);
+	    
+	    new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+                Socket s = null;
+                try {
+                   s = new Socket(InetAddress.getLocalHost(), 5000);
+                } catch (UnknownHostException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                
+                if (s == null) return;
+                
+                BufferedWriter out = null;
+                try {
+                    out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+//                BufferedReader in = null;
+//                try {
+//                    in = new BufferedReader(new InputStreamReader(s.getInputStream(), "utf-8"));
+//                } catch (UnsupportedEncodingException e) {
+//                    // TODO Auto-generated catch block
+//                    e.printStackTrace();
+//                } catch (IOException e) {
+//                    // TODO Auto-generated catch block
+//                    e.printStackTrace();
+//                }
+                try {
+                    out.write("DUMP -1");
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                try {
+                    out.newLine();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                try {
+                    out.flush();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+//                String line = null;
+//                int maxCount = 0;
+//                try {
+//                    while ( (maxCount < 4) && ((line = in.readLine()) != null) ) {
+//                        Log.i(TAG, line);
+//                    }
+//                } catch (IOException e) {
+//                    // TODO Auto-generated catch block
+//                    e.printStackTrace();
+//                }
+                ViewNode viewnode = null;
+                try {
+                    viewnode = HierarchyViewer.loadViewTreeData(s.getInputStream());
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                
+                if (viewnode != null) {
+                    
+                }
+//                Monkey m = monkey;
+//                m.drag(20, 2, 20, 200, 10, 200);
+
+//                Collection<String> c;
+//                try {
+//                    c = monkey.getRootView();
+//                } catch (IOException e) {
+//                    // TODO Auto-generated catch block
+//                    e.printStackTrace();
+//                }
+//                if (c != null)
+//                    Log.i(TAG, c.toArray().toString());
+                
+                try {
+                    s.close();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }).start();
 	}
 
 	@Override
