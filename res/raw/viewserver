@@ -1,0 +1,3 @@
+base=/sdcard
+export CLASSPATH=$base/ViewServer.jar
+exec app_process $base test.framework.java.utils.ViewServer "$@"

@@ -11,26 +11,17 @@ import java.util.Date;
 import java.util.List;
 
 import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
+import android.app.ActivityManager.RunningTaskInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
-import android.content.pm.ServiceInfo;
-import android.net.ConnectivityManager;
-import android.net.LocalServerSocket;
 import android.os.Environment;
-import android.os.SystemClock;
-import android.provider.SyncStateContract.Constants;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
@@ -104,6 +95,14 @@ public final class PushUtility {
         }
     }
 
+    public static RunningTaskInfo getCurrentActivity(Context context) {
+    	 ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+         RunningTaskInfo info = manager.getRunningTasks(1).get(0);
+         
+         return info;
+    }
+    
+    
     /**
      * 
      * 获取指定的sticky broadcast intent

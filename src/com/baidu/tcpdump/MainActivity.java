@@ -16,15 +16,19 @@ import java.util.List;
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
 import test.framework.java.utils.HierarchyViewer;
+import test.framework.java.utils.Monkey;
+import test.framework.java.utils.Monkey.OnMonkeyListener;
 import test.framework.java.utils.Network;
 import test.framework.java.utils.PushUtility;
 import test.framework.java.utils.RootCmd;
 import test.framework.java.utils.ScreenCapture;
-import test.framework.java.utils.SystemService;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,11 +40,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.hierarchyviewerlib.device.ViewNode;
-import com.baidu.tcpdump.R;
 
 @SuppressLint("SdCardPath")
 public class MainActivity extends Activity {
@@ -364,6 +368,35 @@ public class MainActivity extends Activity {
 //		return true;
 	}
 	
+	private boolean installViewserver() {
+		try {
+			String file = "viewserver";
+			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.viewserver, file, getApplicationContext());
+			String viewserver = FileUtils.getFilesDir(getApplicationContext()).toString() + "/" + file;
+			
+			FileUtils.SaveIncludedFileIntoFilesFolder(R.raw.viewserverjar, file, getApplicationContext());
+			String jar = FileUtils.getFilesDir(getApplicationContext()).toString() + "/" + file;
+			RootCmd.execRootCmd(mBusybox + " cat " + jar + " > /sdcard/ViewServer.jar");
+			
+			// 重新挂载/system分区使分区可写
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,rw /system");
+			// copy busybox 到 /system/bin/busybox
+			RootCmd.execRootCmd(mBusybox + " cat " + viewserver + " > /system/bin/" + file);
+			
+			RootCmd.execRootCmd(mBusybox + " chmod 777 /system/bin/" + file);
+
+//			log("还原/system分区只读属性");
+			RootCmd.execRootCmd(mBusybox + " mount -o remount,ro /system");
+			log("安装viewserver成功！");
+			
+			return true;
+		} catch (Exception e) {
+			Log.e(TAG, Log.getStackTraceString(e));
+			log("安装viewserver失败！无法测试");
+			return false;
+		}
+	}
+	
 	private boolean installTcpdump() {
 		try {
 			String file = "tcpdump";
@@ -643,6 +676,8 @@ public class MainActivity extends Activity {
 			if (!ensureNetworkConnected()) {
 				return;
 			}
+			
+			installViewserver();
 			
 			// 第3步：覆盖安装busybox 从 res/raw/busybox文件 到 /data/data/com.baidu.tcpdump/files/busybox -> /system/bin/busybox
 			if (!ensureBusyboxInstalled()) {
@@ -1029,6 +1064,12 @@ public class MainActivity extends Activity {
 					log("没有screencap命令， 请截图！总流量+总电量");
 				}
 				
+				if (ScreenCapture.hasScreencap()) {
+					captureTraffic("初始");
+					
+					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+					
+				}
 //				log("测试前置条件成功，请截流量截图，及微信流量！\n然后点击【统计流量、电量】");
 				
 			}
@@ -1151,8 +1192,28 @@ public class MainActivity extends Activity {
 		intent.addCategory(Intent.CATEGORY_HOME);
 		startActivity(intent);
 //		screenCapture();
+				
+//		if (ScreenCapture.hasScreencap()) {
+//			captureTraffic("初始");
+//			
+//			sleep(11);
+//			
+//			RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+//			
+//			log("流量已截图");
+//		}
 		
-//		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+				
+//				RunningTaskInfo info = PushUtility.getCurrentActivity(getApplicationContext());
+//				String shortClassName = info.topActivity.getShortClassName();    //类名
+//		        String className = info.topActivity.getClassName();              //完整类名
+//		        String packageName = info.topActivity.getPackageName(); //包名
+		        
+		        
+		        
+		        
+//				com.andorid.settings.Settings$DataUsageSummaryActivity
+//				RootCmd.execRootCm
 	}
 	
 	public void screenCapture() {
@@ -1164,6 +1225,62 @@ public class MainActivity extends Activity {
 		sleep(2);
 		screenShot(resultPath + "总电量.png");
 		sleep(1);
+	}
+	
+	static boolean done;
+	private void captureTraffic(final String s) {
+		startDataSummary();
+		sleep(2);
+		
+		done = false;
+		final Monkey m = new Monkey();
+        m.start(new OnMonkeyListener() {
+			
+			@Override
+			public void OnStarted(boolean success) {
+				// TODO Auto-generated method stub
+//				sleep(3);
+				int index = 1;
+		        m.drag(20, 500, 20, 200, 10, 200);
+		        screenShot(resultPath + "总流量" + s + index++ + ".png");
+		        sleep(2);
+		        
+		        m.drag(20, 500, 20, 200, 10, 200);
+		        screenShot(resultPath + "总流量" + s + index++ + ".png");
+		        sleep(2);
+		        
+		        m.drag(20, 500, 20, 200, 10, 200);
+		        screenShot(resultPath + "总流量" + s + index++ + ".png");
+		        sleep(2);
+		        
+		        m.drag(20, 500, 20, 200, 10, 200);
+		        screenShot(resultPath + "总流量" + s + index++ + ".png");
+		        sleep(2);
+		        
+		        m.drag(20, 500, 20, 200, 10, 200);
+		        screenShot(resultPath + "总流量" + s + index++ + ".png");
+		        sleep(2);
+		        
+		        done = true;
+			}
+		});
+		
+        int time = 0;
+        boolean timeout = false;
+        while (!done) {
+        	sleep(2);
+        	time += 2;
+        	if (time > 20) {
+        		timeout = true;
+        		break;
+        	}
+        }
+        
+        if (timeout) {
+        	log("截图失败， 请手动截图！");
+        } else {
+        	log("截图成功！");
+        }
 	}
 	
 	private void captureItems() {
@@ -1188,6 +1305,13 @@ public class MainActivity extends Activity {
 		Intent powerTop = new Intent();
 		powerTop.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTop");
 		startActivity(powerTop);
+	}
+	
+	public void startDataSummary() {
+		Intent dataSummary = new Intent();
+		dataSummary.setClassName("com.android.settings", "com.android.settings.Settings$DataUsageSummaryActivity");
+		dataSummary.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		startActivity(dataSummary);
 	}
 	
 	private void startPowerTabs(int uid) {

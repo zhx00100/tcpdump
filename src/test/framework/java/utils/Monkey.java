@@ -33,16 +33,22 @@ public class Monkey {
         public void OnStarted(boolean success);
     }
     
+    boolean success = false;
+    
+    public boolean isConnected() {
+    	return success;
+    }
+    
     public void start(final OnMonkeyListener onMonkeyListener) {
         new Thread(new Runnable() {
             
             @Override
             public void run() {
                 // TODO Auto-generated method stub
-                boolean success = false;
                 
-//                killAll();
-//                startMonkeyServer();
+                
+                killAll();
+                startMonkeyServer();
                 
                 try {
                     Thread.sleep(2000);
