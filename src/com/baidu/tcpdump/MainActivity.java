@@ -203,6 +203,8 @@ public class MainActivity extends Activity {
 				capturePower("结束");
 				captureTraffic("结束");
 				
+				RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+				
 				// if (view != null) {
 				DateFormat dateFormat = new SimpleDateFormat(
 						"yyyy/MM/dd HH:mm:ss");
