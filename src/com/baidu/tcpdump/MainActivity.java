@@ -201,8 +201,8 @@ public class MainActivity extends Activity {
 				// stopPower();
 
 				if (ScreenCapture.hasScreencap()) {
-					capturePower("结束");
-					captureTraffic("结束");
+					capturePower("end");
+					captureTraffic("end");
 					
 					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 				}
@@ -1058,7 +1058,7 @@ public class MainActivity extends Activity {
 				// 第12步：截图：电量
 				if (ScreenCapture.hasScreencap()) {
 					log("初始电量截图");
-					capturePower("开始");
+					capturePower("begin");
 					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 				}
 				
@@ -1069,7 +1069,7 @@ public class MainActivity extends Activity {
 				}
 				
 				if (ScreenCapture.hasScreencap()) {
-					captureTraffic("开始");
+					captureTraffic("begin");
 					
 					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 					
@@ -1233,6 +1233,7 @@ public class MainActivity extends Activity {
 	
 	static boolean done;
 	private void captureTraffic(final String s) {
+		try {
 		startDataSummary();
 		sleep(2);
 		
@@ -1285,6 +1286,10 @@ public class MainActivity extends Activity {
         } else {
         	log("截图成功！");
         }
+		}catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
 	}
 	
 	private void captureItems() {
