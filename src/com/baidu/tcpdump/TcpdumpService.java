@@ -54,14 +54,6 @@ public class TcpdumpService extends Service {
 		final String tcpdump = "tcpdump";
 		
 		final String cmd = "%1s -i any -s 0 -p -w " + MainActivity.resultPath + "/%2s %3s &";
-		
-		new Thread() {
-
-			@Override
-			public void run() {
-				RootCmd.execRootCmd(String.format(cmd, tcpdump, "hi.pcap", "port 1863"));
-			}
-		}.start();
 
 		new Thread() {
 
@@ -94,6 +86,14 @@ public class TcpdumpService extends Service {
 				RootCmd.execRootCmd(String.format(cmd, tcpdump, "all.pcap", ""));
 			}
 			
+		}.start();
+		
+		new Thread() {
+
+			@Override
+			public void run() {
+				RootCmd.execRootCmd(String.format(cmd, tcpdump, "tencent.pcap", "port 8080"));
+			}
 		}.start();
 	}
 

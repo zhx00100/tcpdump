@@ -527,7 +527,26 @@ public final class PushUtility {
 		}
 		return allPackages;
 	}
-  
+	
+	/**
+	 * 获取uid
+	 */
+	public static int getUidByPkgName(Context context, String packageName) {
+		PackageManager pm = SystemService.getPackageManager(context);
+		ApplicationInfo ai = null;
+		try {
+			ai = pm.getApplicationInfo(packageName, PackageManager.GET_ACTIVITIES);
+		} catch (NameNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		if (ai != null) {
+			return ai.uid;
+		}
+		
+		return -1;
+	}
     
 //    /**
 //     * 判断Push service是否是在Moplus中启动的

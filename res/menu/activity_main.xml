@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/menu_one_app"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:checkable="true"
+        android:title="@string/menu_one_app"/>
+
+    <item
+        android:id="@+id/menu_two_app"
+        android:orderInCategory="101"
+        android:showAsAction="never"
+        android:checkable="true"
+        android:title="@string/menu_two_app"/>
+</menu>

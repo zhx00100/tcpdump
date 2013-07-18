@@ -10,7 +10,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/test_suit"
-        android:onClick="stopTcpdump"
+        android:onClick="onStopTcpdumpClick"
         android:text="@string/stop_tcpdump" />
 
     <Button
@@ -21,7 +21,7 @@
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button1"
         android:text="查询长连接"
-        android:onClick="isConnected" />
+        android:onClick="onQueryConnectsClick" />
 
     <Button
         android:id="@+id/button4"
@@ -31,7 +31,7 @@
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button3"
         android:text="统计流量、电量"
-        android:onClick="trafficAndPower" />
+        android:onClick="onTrafficAndPowerClick" />
 
     <Button
         android:id="@+id/test_suit"
@@ -40,7 +40,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
-        android:onClick="testSuit"
+        android:onClick="onTestSuitClick"
         android:text="@string/test_suit" />
 
     <Button
@@ -50,19 +50,9 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button2"
-        android:onClick="root"
+        android:onClick="onRootClick"
         android:text="一键root" />
 
-    <Button
-        android:id="@+id/button4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/button3"
-        android:onClick="trafficAndPower"
-        android:text="统计流量、电量" />
-    
     <Button
         android:id="@+id/button5"
         android:layout_width="wrap_content"
@@ -70,7 +60,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button4"
-        android:onClick="update"
+        android:onClick="onUpdateClick"
         android:text="for test" />
     
     <TextView
@@ -81,7 +71,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button5"
-        android:hint="日志区间"
+        android:hint="请在菜单选项中选择测试模式：\n单APP 或者 双APP\n默认单APP模式"
         android:saveEnabled="true"
         android:scrollbars="vertical" />
 

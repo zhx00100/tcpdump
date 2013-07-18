@@ -1,12 +1,9 @@
 package com.baidu.tcpdump;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -16,16 +13,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.android.hierarchyviewerlib.device.ViewNode;
-
 import test.framework.java.utils.Device;
 import test.framework.java.utils.FileUtils;
 import test.framework.java.utils.HierarchyViewer;
-import test.framework.java.utils.Monkey;
 import test.framework.java.utils.Network;
 import test.framework.java.utils.PushUtility;
 import test.framework.java.utils.RootCmd;
-import test.framework.java.utils.ViewServer;
+import test.framework.java.utils.ScreenCapture;
+import test.framework.java.utils.SystemService;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -38,9 +33,14 @@ import android.os.PowerManager.WakeLock;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.android.hierarchyviewerlib.device.ViewNode;
+import com.baidu.tcpdump.R;
 
 @SuppressLint("SdCardPath")
 public class MainActivity extends Activity {
@@ -63,7 +63,9 @@ public class MainActivity extends Activity {
 
 	public long mStartTime;
 
-	String mBusybox = "/system/bin/busybox";
+	public static final String mBusybox = "/system/bin/busybox";
+	
+	private static int sTestMode = 1;//1: 单app， 2：双app
 	
 	@Override
 	protected void onResume() {
@@ -122,7 +124,7 @@ public class MainActivity extends Activity {
 
 		String cmd = intent.getStringExtra("cmd");
 		if (TextUtils.equals(cmd, "stop_tcpdump")) {
-			stopTcpdump(null);
+			onStopTcpdumpClick(null);
 		}
 
 		String root = intent.getStringExtra("rooted");
@@ -134,7 +136,29 @@ public class MainActivity extends Activity {
 		}
 	}
 
-	public void testSuit(View v) {
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.activity_main, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Toast.makeText(getApplicationContext(), item.getTitle(), Toast.LENGTH_LONG).show();
+		switch (item.getItemId()) {
+		case R.id.menu_one_app:
+			sTestMode = 1;
+			break;
+		case R.id.menu_two_app:
+			sTestMode = 2;
+			break;
+		default:
+			sTestMode = -1;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	public void onTestSuitClick(View v) {
 
 		mLogView.setText("");
 		new Thread(new Run()).start();
@@ -156,7 +180,7 @@ public class MainActivity extends Activity {
 		log("停止所有tcpdump进程...");
 	}
 	
-	public void stopTcpdump(View v) {
+	public void onStopTcpdumpClick(View v) {
 
 		new Thread(new Runnable() {
 
@@ -365,9 +389,8 @@ public class MainActivity extends Activity {
 	}
 	
 	private void uninstallAllApks() {
-		log("卸载所有JPush、个推、baidupush应用...");
-		//baidu hi
-		log("卸载百度hi");
+		log("卸载所有JPush、个推、PushDemo应用...");
+		
 		ArrayList<String> pushes = PushUtility
 				.getAllPackagesUsingPush(getApplicationContext());
 		ArrayList<String> jpushes = PushUtility
@@ -379,9 +402,6 @@ public class MainActivity extends Activity {
 		all.addAll(pushes);
 		all.addAll(jpushes);
 		all.addAll(getuies);
-
-		//baidu hi
-		all.add("com.baidu.hi");
 		
 		for (String apk : all) {
 			RootCmd.execRootCmd("pm uninstall " + apk);
@@ -391,10 +411,31 @@ public class MainActivity extends Activity {
 		
 	}
 	
+	private void installAllApks2() {
+		log("开始安装JPush、个推、baidupush...");
+		String[] apkToInstall = { "PushDemo1.apk", "PushDemo2.apk", "jpush1.apk", "jpush2.apk", "getui1.apk", "getui2.apk" };
+		// ArrayList<InputStream> apkPath = new ArrayList<InputStream>();
+		String dstParent = "/sdcard/zhangxin/apk/";
+
+		AssetManager assetMgr = getAssets();
+		for (String apk : apkToInstall) {
+			try {
+				FileUtils.copyFile(assetMgr.open(apk), dstParent + apk);
+			} catch (IOException e) {
+				Log.e(TAG, Log.getStackTraceString(e));
+			}
+		}
+
+		// 2.2.2安装
+		for (String apk : apkToInstall) {
+			RootCmd.execRootCmd("pm install " + dstParent + apk);
+		}
+		log("安装完成!");
+	}
+	
 	private void installAllApks() {
-		log("开始安装baiduhi、JPush、个推、baidupush...");
-		String[] apkToInstall = { "JPush.apk", "GexinSdkDemoActivity.apk",
-				"PushDemo.apk", "BaiduHi.apk" };
+		log("开始安装JPush、个推、PushDemo...");
+		String[] apkToInstall = { "jpush1.apk", "getui1.apk", "PushDemo1.apk" };
 		// ArrayList<InputStream> apkPath = new ArrayList<InputStream>();
 		String dstParent = "/sdcard/zhangxin/apk/";
 
@@ -421,16 +462,57 @@ public class MainActivity extends Activity {
 		RootCmd.execRootCmd("echo " + c + " >> " + resultPath + "device_info.txt");
 	}
 	
-	private void launchAllApps() {
+	private void launchAllApps2() {
 		List<String> res = null;
-		// 启动 个推
-		log("开始启动个推...");
-		res = RootCmd.execRootCmd("am start -n com.igexin.demo/.GexinSdkDemoActivity");
+		// 启动 个推1
+		log("开始启动个推1...");
+		res = RootCmd.execRootCmd("am start -n zx.getui1/com.igexin.demo.GexinSdkDemoActivity");
+		sleep(20);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+		
+		// 启动 个推2
+		log("开始启动个推2...");
+		res = RootCmd.execRootCmd("am start -n zx.getui2/com.igexin.demo.GexinSdkDemoActivity");
 		sleep(20);
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 
 		// 启动 百度
-		log("开始启动baidupush demo...");
+		log("开始启动PushDemo1...");
+		RootCmd.execRootCmd("am start -n com.baidu.push.example/com.baidu.push.example.PushDemoActivity");
+		sleep(10);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+		
+		// 启动 百度
+		log("开始启动PushDemo2...");
+		RootCmd.execRootCmd("am start -n com.baidu.push.example2/com.baidu.push.example.PushDemoActivity");
+		sleep(10);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+
+		// 启动 jpush
+		log("开始启动jpush1...");
+		RootCmd.execRootCmd("am start -n zhangxin.push/com.example.jpushdemo.MainActivity");
+		sleep(5);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+		
+		// 启动 jpush
+		log("开始启动jpush2...");
+		RootCmd.execRootCmd("am start -n zhangxin.push2/com.example.jpushdemo.MainActivity");
+		sleep(5);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+		
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+	}
+	
+	private void launchAllApps() {
+		List<String> res = null;
+		// 启动 个推
+		log("开始启动个推...");
+		res = RootCmd.execRootCmd("am start -n zx.getui1/com.igexin.demo.GexinSdkDemoActivity");
+		sleep(20);
+		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+
+		// 启动 百度
+		log("开始启动PushDemo...");
 		RootCmd.execRootCmd("am start -n com.baidu.push.example/com.baidu.push.example.PushDemoActivity");
 		sleep(10);
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
@@ -441,12 +523,6 @@ public class MainActivity extends Activity {
 		sleep(5);
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 		
-		// 启动 baidu hi
-		log("开始启动BaiduHi...");
-		RootCmd.execRootCmd("am start -n com.baidu.hi/.activities.Logo");
-		sleep(3);
-		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
-
 		RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 	}
 	
@@ -458,12 +534,10 @@ public class MainActivity extends Activity {
 		boolean bpush = false;
 		boolean jpush = false;
 		boolean getui = false;
-		boolean baiduhi = false;
 
 		int bpushConnectCount = 0;
 		int jpushConnectCount = 0;
 		int getuiConnectCount = 0;
-		int baiduhiConnectCount = 0;
 
 		if (netstat.isEmpty()) {
 			log("错误！长连接均未建立！！！");
@@ -491,13 +565,6 @@ public class MainActivity extends Activity {
 						getuiConnectCount++;
 					}
 				}
-				
-				if (item.contains(":1863")) {
-					if (item.contains("ESTABLISHED")) {
-						baiduhi = true;
-						baiduhiConnectCount++;
-					}
-				}
 			}
 
 			if (bpush) {
@@ -517,14 +584,8 @@ public class MainActivity extends Activity {
 			} else {
 				log("错误！个推长连接未建立！");
 			}
-
-			if (baiduhi) {
-				log("baiduhi长连接建立成功！连接数 = " + baiduhiConnectCount);
-			} else {
-				log("错误！BaiduHi长连接未建立！");
-			}
 			
-			isAllConnected = bpush && jpush && getui && baiduhi;
+			isAllConnected = bpush && jpush && getui;
 		}
 
 		if (!isAllConnected) {
@@ -532,14 +593,28 @@ public class MainActivity extends Activity {
 			return false;
 		}
 
-		if (bpushConnectCount == 1 && jpushConnectCount == 1
-				&& getuiConnectCount == 1 && baiduhiConnectCount == 1) {
+		if (sTestMode == 1) {
+			if (bpushConnectCount == 1 && jpushConnectCount == 1
+					&& getuiConnectCount == 1) {
 
+			} else {
+				log("长连接数目不正确,有未建立长连接的应用！\n请根据提示或者【查询长连接】打开对应应用重新绑定！\n确保长连接都存在， 然后点击【统计流量、电量】");
+				return false;
+			}
+		} else if (sTestMode == 2) {
+			if (bpushConnectCount == 1 && jpushConnectCount == 2
+					&& getuiConnectCount == 2) {
+
+			} else {
+				log("长连接数目不正确, 有未建立长连接的应用！\n请根据提示或者【查询长连接】打开对应应用重新绑定！\n确保长连接都存在， 然后点击【统计流量、电量】");
+				return false;
+			}
 		} else {
-			log("长连接数目不正确, 这可能是bug！\n请点击重运行【一键测试】！\n确保长连接都==1!");
+			log("sTestMode error = " + sTestMode + "\n" + "请重新测试！");
+			
 			clearResultPath();
-			return false;
 		}
+		
 		
 		return true;
 	}
@@ -549,6 +624,14 @@ public class MainActivity extends Activity {
 
 			// 打印并记录测试开始时间
 			mStartTime = System.currentTimeMillis();
+			if (sTestMode == 1) {
+				log("测试模式：单APP");
+			} else if (sTestMode == 2) {
+				log("测试模式：双APP");
+			} else {
+				log("未知错误， 联系作者");
+				return;
+			}
 			log("开始测试!!!\n开始时间：" + getDate());
 						
 			// 第1步：检查设备是否具有root权限， 要有su文件
@@ -579,38 +662,61 @@ public class MainActivity extends Activity {
 			removeCacheDirs();
 			log("删除/sdcard/zhangxin/apk & traffic目录");
 
-			// 第7步：安装 JPush、个推、BPush（5分钟和10分钟2个版本）， 共4个版本
+			// 第7步：安装 JPush、个推、BPush
 			// 1.卸载所有竞品
 			uninstallAllApks();
 
-			// 2.安装所有竞品
-			installAllApks();
-
-			// 第8步：创建结果收集目录
-			initResultPath();
-			log("创建结果收集目录：" + resultPath);
-			initLogPath();
-			log("创建log.txt，收集打印日志");
-
-			// 第9步：收集设备信息
-			getDeviceInfo();
-			
-			// 第10步：dump
-			log("启动tcpdump...");
-			tcpdump(null);
-
-			// 第11步：启动所有竞品
-			launchAllApps();
-
-			// 第12步：确保竞品长连接存在且连接数 == 1
-			log("等待建立长连接");
-//			sleep(10);
-			if (!ensureSocketConnected()) {
+			if (sTestMode == 1) {
+				// 2.安装所有竞品
+				installAllApks();
+	
+				// 第8步：创建结果收集目录
+				initResultPath();
+				log("创建结果收集目录：" + resultPath);
+				initLogPath();
+				log("创建log.txt，收集打印日志");
+	
+				// 第9步：收集设备信息
+				getDeviceInfo();
+				
+				// 第10步：dump
+				log("启动tcpdump...");
+				tcpdump(null);
+	
+				// 第11步：启动所有竞品
+				launchAllApps();
+	
+				// 第12步：确保竞品长连接存在且连接数 == 1
+				log("等待建立长连接");
+				sleep(2);
+				if (!ensureSocketConnected()) {
+					return;
+				}
+	
+				// 第13步：开始统计流量&电量
+				onTrafficAndPowerClick(null);
+			} else if (sTestMode == 2) {
+				installAllApks2();
+				initResultPath();
+				log("创建结果收集目录：" + resultPath);
+				initLogPath();
+				log("创建log.txt，收集打印日志");
+				getDeviceInfo();
+				log("启动tcpdump...");
+				tcpdump(null);
+				launchAllApps2();
+				log("等待建立长连接");
+				sleep(2);
+				if (!ensureSocketConnected()) {
+					return;
+				}
+				
+				onTrafficAndPowerClick(null);
+			} else {
+				log("error! unknown, " + "sTestMode = " + sTestMode);
 				return;
 			}
-
-			// 第13步：开始统计流量&电量
-			trafficAndPower(null);
+			
 		}
 	}
 	
@@ -669,8 +775,13 @@ public class MainActivity extends Activity {
 	}
 
 	private void powerMonitor() {
-		String[] pkgs = { "com.baidu.push.example", "zhangxin.push",
-				"com.igexin.demo" };
+		final String[] pkgs;
+		
+		if (sTestMode == 1) {
+			pkgs = new String[]{"com.baidu.push.example", "zhangxin.push", "zx.getui1"};
+		} else {
+			pkgs = new String[]{"com.baidu.push.example", "com.baidu.push.example2", "zhangxin.push", "zhangxin.push2", "zx.getui1", "zx.getui2"};
+		}
 
 		RootCmd.execRootCmd("am startservice -a com.baidu.action.statistics.POWER");
 		sleep(2);
@@ -704,8 +815,8 @@ public class MainActivity extends Activity {
 
 	}
 
-	private void traffic(boolean isAppend) {
 
+	private void traffic(boolean isAppend) {
 		AssetManager assetMgr = getAssets();
 
 		String bpush = "/sdcard/zhangxin/traffic/traffic_bdpush";
@@ -730,53 +841,79 @@ public class MainActivity extends Activity {
 		String dstJpush = resultPath + "traffic_jpush.log";
 		String dstGetui = resultPath + "traffic_getui.log";
 
-		try {
-			RootCmd.execRootCmd("date >> " + dstBpush);
-			ArrayList<String> a = null;
-			a = RootCmd.execRootCmd("cat " + bpush);
-			a = RootCmd.execRootCmd(a.get(0));
-			for (String i : a) {
-				i = i.replace(";", ",");
-				RootCmd.execRootCmd("echo " + i + "';'" + token + dstBpush);
-			}
+		RootCmd.execRootCmd("date >> " + dstBpush);
+		ArrayList<String> a = null;
+		a = RootCmd.execRootCmd("sh " + bpush);
+		if (a != null) {
+			String ret = a.toString();
+			RootCmd.execRootCmd("echo " + ret + "';'" + token + dstBpush);
 			RootCmd.execRootCmd("echo >> " + dstBpush);
-
-			RootCmd.execRootCmd("date >> " + dstJpush);
-			a = RootCmd.execRootCmd("cat " + jpush);
-			a = RootCmd.execRootCmd(a.get(0));
-			for (String i : a) {
-				i = i.replace(";", ",");
-				RootCmd.execRootCmd("echo " + i + " ';' " + token + dstJpush);
-			}
-			RootCmd.execRootCmd("echo >> " + dstJpush);
-
-			RootCmd.execRootCmd("date >> " + dstGetui);
-			a = RootCmd.execRootCmd("cat " + getui);
-			a = RootCmd.execRootCmd(a.get(0));
-			for (String i : a) {
-				i = i.replace(";", ",");
-				RootCmd.execRootCmd("echo " + i + " ';' " + token + dstGetui);
-			}
-			RootCmd.execRootCmd("echo >> " + dstGetui);
-		} catch (Exception e) {
-			Log.e(TAG, Log.getStackTraceString(e));
 		}
+		
+		RootCmd.execRootCmd("date >> " + dstJpush);
+		a = null;
+		a = RootCmd.execRootCmd("sh " + jpush);
+		if (a != null) {
+			String ret = a.toString();
+			RootCmd.execRootCmd("echo " + ret + "';'" + token + dstJpush);
+			RootCmd.execRootCmd("echo >> " + dstJpush);
+		}
+		
+		RootCmd.execRootCmd("date >> " + dstGetui);
+		a = null;
+		a = RootCmd.execRootCmd("sh " + getui);
+		if (a != null) {
+			String ret = a.toString();
+			RootCmd.execRootCmd("echo " + ret + "';'" + token + dstGetui);
+			RootCmd.execRootCmd("echo >> " + dstGetui);
+		}
+		
+//		try {
+//			RootCmd.execRootCmd("date >> " + dstBpush);
+//			ArrayList<String> a = null;
+//			a = RootCmd.execRootCmd("cat " + bpush);
+//			a = RootCmd.execRootCmd(a.get(0));
+//			for (String i : a) {
+//				i = i.replace(";", ",");
+//				RootCmd.execRootCmd("echo " + i + "';'" + token + dstBpush);
+//			}
+//			RootCmd.execRootCmd("echo >> " + dstBpush);
+//
+//			RootCmd.execRootCmd("date >> " + dstJpush);
+//			a = RootCmd.execRootCmd("cat " + jpush);
+//			a = RootCmd.execRootCmd(a.get(0));
+//			for (String i : a) {
+//				i = i.replace(";", ",");
+//				RootCmd.execRootCmd("echo " + i + " ';' " + token + dstJpush);
+//			}
+//			RootCmd.execRootCmd("echo >> " + dstJpush);
+//
+//			RootCmd.execRootCmd("date >> " + dstGetui);
+//			a = RootCmd.execRootCmd("cat " + getui);
+//			a = RootCmd.execRootCmd(a.get(0));
+//			for (String i : a) {
+//				i = i.replace(";", ",");
+//				RootCmd.execRootCmd("echo " + i + " ';' " + token + dstGetui);
+//			}
+//			RootCmd.execRootCmd("echo >> " + dstGetui);
+//		} catch (Exception e) {
+//			Log.e(TAG, Log.getStackTraceString(e));
+//		}
 	}
 
-	public void isConnected(View v) {
+	public void onQueryConnectsClick(View v) {
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				ArrayList<String> netstat = RootCmd
-						.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000|1863/'");
+						.execRootCmd(mBusybox + " netstat -anpt | " + mBusybox + " awk '/5287|5224|5225|3000/'");
 
 				String content = "";
 
 				int bpushConnectCount = 0;
 				int jpushConnectCount = 0;
 				int getuiConnectCount = 0;
-				int baiduhiConnectCount = 0;
 
 				if (netstat.isEmpty()) {
 					content = "错误！长连接均未建立！！！";
@@ -784,7 +921,6 @@ public class MainActivity extends Activity {
 					boolean bpush = false;
 					boolean jpush = false;
 					boolean getui = false;
-					boolean baiduhi = false;
 					
 					for (String item : netstat) {
 						if (item.contains(":5287")) {
@@ -808,12 +944,6 @@ public class MainActivity extends Activity {
 							}
 						}
 						
-						if (item.contains(":1863")) {
-							if (item.contains("ESTABLISHED")) {
-								baiduhi = true;
-								baiduhiConnectCount++;
-							}
-						}
 					}
 
 					if (bpush) {
@@ -837,12 +967,6 @@ public class MainActivity extends Activity {
 						content += "错误！个推长连接未建立！" + "\n";
 					}
 					
-					if (baiduhi) {
-						content += "baiduhi长连接已建立成功！连接数 = " + baiduhiConnectCount
-								+ "\n";
-					} else {
-						content += "baiduhi！个推长连接未建立！" + "\n";
-					}
 				}
 
 				final String log = content;
@@ -856,12 +980,13 @@ public class MainActivity extends Activity {
 		}).start();
 	}
 
-	public void root(View v) {
-		Device device = new Device(getApplicationContext());
-		device.dostuff();
+	public void onRootClick(View v) {
+//		一键root 2.2以下， adbd漏洞
+//		Device device = new Device(getApplicationContext());
+//		device.dostuff();
 	}
 
-	public void trafficAndPower(View v) {
+	public void onTrafficAndPowerClick(View v) {
 		new Thread(new Runnable() {
 
 			@Override
@@ -889,12 +1014,29 @@ public class MainActivity extends Activity {
 				power();
 
 				log("测试套件启动完成！");
+				
+				log("测试已开始！");
+				// 第12步：截图：电量
+				if (ScreenCapture.hasScreencap()) {
+					log("初始电量截图");
+					capturePower();
+					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
+				}
+				
+				if (ScreenCapture.hasScreencap()) {
+					log("请截图！总流量");
+				} else {
+					log("没有screencap命令， 请截图！总流量+总电量");
+				}
+				
+//				log("测试前置条件成功，请截流量截图，及微信流量！\n然后点击【统计流量、电量】");
+				
 			}
 		}).start();
 
 	}
 
-	public void update(View v) {
+	public void onUpdateClick(View v) {
 //		Intent intent = new Intent();
 //		intent.setAction("android.intent.action.VIEW");
 //		Uri content_url = Uri.parse(SHARED_URL);
@@ -908,7 +1050,7 @@ public class MainActivity extends Activity {
                 // TODO Auto-generated method stub
                 Socket s = null;
                 try {
-                   s = new Socket(InetAddress.getLocalHost(), 5000);
+                   s = new Socket(InetAddress.getLocalHost(), 12321);
                 } catch (UnknownHostException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -973,7 +1115,8 @@ public class MainActivity extends Activity {
                 }
                 
                 if (viewnode != null) {
-                    
+                	
+                    Log.i(TAG, viewnode.toString());
                 }
 //                Monkey m = monkey;
 //                m.drag(20, 2, 20, 200, 10, 200);
@@ -1019,23 +1162,26 @@ public class MainActivity extends Activity {
 	private void capturePower() {
 		startPowerTop();
 		sleep(2);
-		screenShot(resultPath + "powertop.png");
+		screenShot(resultPath + "总电量.png");
+		sleep(1);
+	}
+	
+	private void captureItems() {
+		String[] pkgName = {"com.baidu.push.example", "com.baidu.push.example2", "zhangxin.push", "zhangxin.push2", "zx.getui1", "zx.getui2"};
 		
-		startPowerTabs("bdservice_v1");
-		sleep(2);
-		screenShot(resultPath + "bpush.png");
-		
-		startPowerTabs("zhangxin.push");
-		sleep(2);
-		screenShot(resultPath + "jpush.png");
-		
-		startPowerTabs("com.igexin.demo.pushservice");
-		sleep(2);
-		screenShot(resultPath + "getui.png");
+		int uid = -1;
+		for (String item : pkgName) {
+			uid = PushUtility.getUidByPkgName(getApplicationContext(), item);
+			if (uid == -1) continue;
+			startPowerTabs(uid);
+			sleep(2);
+			screenShot(resultPath + item + ".png");
+			sleep(1);
+		}
 	}
 	
 	private void screenShot(String path) {
-		RootCmd.execRootCmd("screenshot " + path);
+		ScreenCapture.takeCapture(path);
 	}
 
 	public void startPowerTop() {
@@ -1044,13 +1190,24 @@ public class MainActivity extends Activity {
 		startActivity(powerTop);
 	}
 	
-	private void startPowerTabs(String pkg) {
-		String cmd = "ps=`/system/bin/busybox ps | /system/bin/busybox awk '/%1s$/ {print $1}'|/system/bin/busybox awk '{if(NR==1)print $1}'`;uid=`/system/bin/busybox awk '/Uid/ {print $2}' /proc/$ps/status`;echo $uid;";
-		List<String> ret = RootCmd.execRootCmd(String.format(cmd, pkg));
+	private void startPowerTabs(int uid) {
+//		String cmd = "ps=`/system/bin/busybox ps | /system/bin/busybox awk '/%1s$/ {print $1}'|/system/bin/busybox awk '{if(NR==1)print $1}'`;uid=`/system/bin/busybox awk '/Uid/ {print $2}' /proc/$ps/status`;echo $uid;";
+//		List<String> ret = RootCmd.execRootCmd(String.format(cmd, pkg));
+//		
+//		if (ret == null || ret.isEmpty()) {
+//			return;
+//		}
+//		
+//		Intent powerTabs = new Intent();
+//		powerTabs.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTabs");
+////        powerTabs.putExtras(powerTop);
+//        powerTabs.putExtra("uid", Integer.parseInt(ret.get(0)));
+//        startActivity(powerTabs);
+		
 		Intent powerTabs = new Intent();
 		powerTabs.setClassName("edu.umich.PowerTutor", "edu.umich.PowerTutor.ui.PowerTabs");
 //        powerTabs.putExtras(powerTop);
-        powerTabs.putExtra("uid", Integer.parseInt(ret.get(0)));
+        powerTabs.putExtra("uid", uid);
         startActivity(powerTabs);
 	}
 

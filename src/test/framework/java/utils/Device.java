@@ -18,8 +18,8 @@ import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.baidu.tcpdump.R;
 import com.baidu.tcpdump.RootService;
+import com.baidu.tcpdump.R;
 
 public class Device {
 	
