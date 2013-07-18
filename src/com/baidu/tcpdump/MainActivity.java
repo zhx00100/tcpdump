@@ -200,7 +200,8 @@ public class MainActivity extends Activity {
 				powerMonitor();
 				// stopPower();
 
-//				screenCapture();
+				capturePower("结束");
+				captureTraffic("结束");
 				
 				// if (view != null) {
 				DateFormat dateFormat = new SimpleDateFormat(
@@ -1054,7 +1055,7 @@ public class MainActivity extends Activity {
 				// 第12步：截图：电量
 				if (ScreenCapture.hasScreencap()) {
 					log("初始电量截图");
-					capturePower();
+					capturePower("开始");
 					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 				}
 				
@@ -1065,7 +1066,7 @@ public class MainActivity extends Activity {
 				}
 				
 				if (ScreenCapture.hasScreencap()) {
-					captureTraffic("初始");
+					captureTraffic("开始");
 					
 					RootCmd.execRootCmd("am start -n com.baidu.tcpdump/com.baidu.tcpdump.MainActivity");
 					
@@ -1216,14 +1217,14 @@ public class MainActivity extends Activity {
 //				RootCmd.execRootCm
 	}
 	
-	public void screenCapture() {
-		capturePower();
-	}
+//	public void screenCapture() {
+//		capturePower();
+//	}
 	
-	private void capturePower() {
+	private void capturePower(String s) {
 		startPowerTop();
 		sleep(2);
-		screenShot(resultPath + "总电量.png");
+		screenShot(resultPath + "总电量" + s + ".png");
 		sleep(1);
 	}
 	
@@ -1270,7 +1271,7 @@ public class MainActivity extends Activity {
         while (!done) {
         	sleep(2);
         	time += 2;
-        	if (time > 20) {
+        	if (time > 30) {
         		timeout = true;
         		break;
         	}
