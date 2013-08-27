@@ -18,10 +18,10 @@ public class SystemMount {
     } 
      
     private static class SystemPartitionHolder { 
-        private static SystemPartition instance = new SystemPartition(); 
+        private static SystemMount instance = new SystemMount(); 
     } 
      
-    public SystemPartition getInstance() { 
+    public SystemMount getInstance() { 
         return SystemPartitionHolder.instance; 
     } 
      
